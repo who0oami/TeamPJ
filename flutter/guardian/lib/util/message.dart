@@ -19,7 +19,7 @@ class Message {
   } // snackBar
 
   // Dialog
-  static void dialog(BuildContext context,String title,String content,Color color,String routeName) {
+  static void dialog(BuildContext context,String title,String content,Color color) {
     showDialog(
       context: context,
       barrierDismissible: false,

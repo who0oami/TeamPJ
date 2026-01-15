@@ -35,6 +35,59 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Firebase 기본
+  firebase_core: ^3.0.0
+
+  # Firebase Cloud Messaging (푸시 알림)
+  firebase_messaging: ^15.0.0
+
+  # 앱이 켜져 있을 때 알림 표시용 (로컬 알림)
+  flutter_local_notifications: ^17.0.0
+
+  # FCM 토큰 저장용 (상대방 토큰 저장)
+  cloud_firestore: ^5.0.0
+
+  # Riverpod
+  flutter_riverpod: ^3.1.0
+
+  # Pluto_grid
+  pluto_grid: ^8.1.0
+
+  # Syncfusion_flutter_datagrid
+  syncfusion_flutter_datagrid: ^32.1.23
+
+  # Image_picker
+  image_picker: ^1.2.1
+
+  # Get_storage
+  get_storage: ^2.1.1
+
+  # path
+  path: ^1.9.1
+
+  # Table_calendar
+  table_calendar: ^3.2.0
+
+  # Map
+  google_maps_flutter: ^2.10.0
+  geolocator: ^13.0.1
+
+  # Calendar_view
+  calendar_view: ^1.4.0
+
+  # Splash
+  flutter_native_splash: ^2.4.7
+
+  # flutter_animate
+  flutter_animate: ^4.5.2
+
+  # Intl
+  intl: ^0.20.2
+
+  # Http
+  http: ^1.6.0
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

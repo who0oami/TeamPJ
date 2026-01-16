@@ -5,27 +5,27 @@ Author : 황민욱
 */
 
 class Timetable {
-  final String timetableId;       // Firestore doc.id
-  final int timetableSemester;
-  final String timetableSubject;
-  final int timetableTime;
-  final String timetableDay;
+  final String timetable_id;       // Firestore doc.id
+  final int timetable_semester;
+  final String timetable_subject;
+  final int timetable_time;
+  final String timetable_day;
 
   Timetable({
-    required this.timetableId,
-    required this.timetableSemester,
-    required this.timetableSubject,
-    required this.timetableTime,
-    required this.timetableDay,
+    required this.timetable_id,
+    required this.timetable_semester,
+    required this.timetable_subject,
+    required this.timetable_time,
+    required this.timetable_day,
   });
 
   factory Timetable.fromMap(Map<String, dynamic> map, String id){
     return Timetable(
-      timetableId: id,
-      timetableSemester: map['timetable_semester'] ?? 0,
-      timetableSubject: map['timetable_subject'] ?? "",
-      timetableTime: map['timetable_time'] ?? 0,
-      timetableDay: map['timetable_day'] ?? ""
+      timetable_id: id,
+      timetable_semester: map['timetable_semester'] ?? 0,
+      timetable_subject: map['timetable_subject'] ?? "",
+      timetable_time: map['timetable_time'] ?? 0,
+      timetable_day: map['timetable_day'] ?? ""
     );
   }
 }

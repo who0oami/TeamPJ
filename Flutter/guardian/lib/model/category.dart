@@ -17,12 +17,14 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json){
     return Category(
+      category_id : json['category_id'],
       category_title: json['category_title'] ?? ''
       );
   }
 
   Map<String, dynamic> toJson(){
     return{
+      'category_id' : category_id,
       'category_title' : category_title
     };
   }

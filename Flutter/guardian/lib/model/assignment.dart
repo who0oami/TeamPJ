@@ -21,6 +21,7 @@ class Assignment {
 
   factory Assignment.fromJson(Map<String,dynamic> json){
     return Assignment(
+      assignment_id: json['assignment_id'],
       assignment_year: json['assignment_year'],
       teacher_id: json['teacher_id'],
       student_id: json['student_id']
@@ -29,6 +30,7 @@ class Assignment {
 
     Map<String, dynamic> toJson(){
       return{
+        'assignment_id' : assignment_id,
         'assignment_year' : assignment_year,
         'teacher_id' : teacher_id,
         'student_id' : student_id

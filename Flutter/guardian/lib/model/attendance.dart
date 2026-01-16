@@ -27,6 +27,7 @@ class Attendance {
 
   factory Attendance.fromJson(Map<String, dynamic> json){
     return Attendance(
+      attendance_id: json['attendance_id'],
       attendance_star_time: json['attendance_star_time'],
       attendance_end_time: json['attendance_end_time'],
       attendance_status: json['attendance_status'],
@@ -38,6 +39,7 @@ class Attendance {
 
   Map<String, dynamic> toJson(){
     return{
+      'attendance_id' : attendance_id,
       'attendance_star_time' : attendance_star_time,
       'attendance_end_time' : attendance_end_time,
       'attendance_status' : attendance_status,

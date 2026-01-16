@@ -30,5 +30,15 @@ class Semester {
          );
   }
 
+  Map<String,dynamic> toJson(){
+    return{
+      'semester_id':semester_id,
+      'semester_name':semester_name,
+      'semester_start':semester_start,
+      'semester_end':semester_end,
+      'teacher_id':teacher_id
+    };
+  }
+
 
 }

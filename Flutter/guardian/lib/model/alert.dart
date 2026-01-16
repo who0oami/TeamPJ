@@ -4,6 +4,7 @@ Date : 2026-1-16
 Author : 상현
 */
 
+
 class Alert {
   final int? alert_id;
   final int student_id;
@@ -29,6 +30,7 @@ class Alert {
 
   factory Alert.fromJson(Map<String,dynamic> json){
     return Alert(
+      alert_id : json['alert_id'],
       student_id: json['student_id'] ?? '', 
       guardian_id: json['guardian_id'] ?? '',
       teacher_id: json['teacher_id'] ?? '',

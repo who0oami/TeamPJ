@@ -1,7 +1,7 @@
-import 'package:a/util/acolor.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:student/util/acolor.dart';
 
 /* 
 Description : 학생 메인페이지 구성

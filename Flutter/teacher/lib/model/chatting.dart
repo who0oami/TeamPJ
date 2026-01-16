@@ -15,11 +15,7 @@
 class Chatting {
   //  Property
   //  No auto-increment Primary key
-  /*  
-  ****NOTICE****
-    firebase primary key is always created in random Strings such as fVbI7qwtFAEqXQhuL2CH
-    chatting_id(PK in ERD), guardian_id(PK in ERD) MUST not exist in this model
-  */
+  String? chatting_id;
   int category_id;  //  FK
   int teacher_id;   //  FK
   DateTime chatting_date;
@@ -27,6 +23,7 @@ class Chatting {
 
   //  Constructor
   Chatting({
+    this.chatting_id,
     required this.category_id,
     required this.teacher_id,
     required this.chatting_date,

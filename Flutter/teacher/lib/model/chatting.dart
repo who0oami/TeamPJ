@@ -5,6 +5,7 @@
   Description: Chatting Model for firebase connection
   Update log: 
     DUMMY 00/00/0000 00:00, 'Point X, Description', Creator: Chansol, Park
+    'Point 1, fromMap created', Creator: Chansol, Park
   Version: 1.0
   Dependency: 
 
@@ -16,8 +17,8 @@ class Chatting {
   //  Property
   //  No auto-increment Primary key
   String? chatting_id;
-  int category_id;  //  FK
-  int teacher_id;   //  FK
+  int category_id; //  FK
+  int teacher_id; //  FK
   DateTime chatting_date;
   String chatting_content;
 
@@ -30,6 +31,17 @@ class Chatting {
     required this.chatting_content,
   });
 
+  //  Point 1
+  factory Chatting.fromMap(Map<String, dynamic> map, String id) {
+    return Chatting(
+      chatting_id: id,
+      category_id: map['category_id'] ?? "",
+      teacher_id: map['teacher_id'] ?? "",
+      chatting_date: DateTime.parse(map['chatting_date']),
+      chatting_content: map['chatting_content'] ?? "",
+    );
+  }
+
   //  copyWith for Riverpod state
   /*  
   ****NOTICE****
@@ -38,6 +50,7 @@ class Chatting {
 
   Chatting copyWith({String? chatting_content, DateTime? chatting_date}) {
     return Chatting(
+      chatting_id: chatting_id,
       category_id: category_id,
       teacher_id: teacher_id,
       chatting_date: chatting_date ?? this.chatting_date,

@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Lunch{
   final String lunch_id;
-  final String lunchcategory_id;
+  final String lunch_category_id;
   final DateTime lunch_date;
   final String lunch_menu;
   final String lunch_image;
@@ -16,7 +16,7 @@ class Lunch{
   Lunch(
     {
       required this.lunch_id,
-      required this.lunchcategory_id,
+      required this.lunch_category_id,
       required this.lunch_date,
       required this.lunch_menu,
       required this.lunch_image,
@@ -26,7 +26,7 @@ class Lunch{
   factory Lunch.fromMap(Map<String, dynamic> map, String id){
     return Lunch(
       lunch_id: id,
-      lunchcategory_id: map['lunchcategory_id'] ?? "",
+      lunch_category_id: map['lunch_category_id'] ?? "",
       lunch_date: (map['lunch_date']as Timestamp).toDate(),
       lunch_menu: map['lunch_menu'] ?? "",
       lunch_image: map['lunch_image'] ?? "");

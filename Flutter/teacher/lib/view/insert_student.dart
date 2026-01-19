@@ -85,30 +85,30 @@ class _InsertStudentState extends ConsumerState<InsertStudent> {
             _buildTextField("주소", addressController),
             _buildTextField("생년월일", birthdayConttroller),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                final student = Student(
-                  student_name: nameController.text, 
-                  student_phone: phoneController.text, 
-                  student_guardian_phone: guardianPhoneController.text, 
-                  student_password: passwordController.text, 
-                  student_address: addressController.text, 
-                  student_birthday: birthdayConttroller.text, 
-                  // student_image: student_image.text
-                  );
-                final result = await studentNotifier.insertStudent(student);
-                if (result == 'OK') {
-                  if (!context.mounted)
-                    return; // await 이후에는 context가 여전히 유효한지 확인
-                  Navigator.of(context).pop();
-                  _snackBar(context, '학생 정보가 등록 되었습니다.', Colors.blue);
-                } else {
-                  if (!context.mounted) return;
-                  _snackBar(context, '오류가 발생했습니다.', Colors.red);
-                }
-              },
-              child: const Text('입력'),
-            ),
+            // ElevatedButton(
+            //   onPressed: () async {
+            //     final student = Student(
+            //       student_name: nameController.text, 
+            //       student_phone: phoneController.text, 
+            //       student_guardian_phone: guardianPhoneController.text, 
+            //       student_password: passwordController.text, 
+            //       student_address: addressController.text, 
+            //       student_birthday: birthdayConttroller.text, 
+            //       // student_image: student_image.text
+            //       );
+            //     final result = await studentNotifier.insertStudent(student);
+            //     if (result == 'OK') {
+            //       if (!context.mounted)
+            //         return; // await 이후에는 context가 여전히 유효한지 확인
+            //       Navigator.of(context).pop();
+            //       _snackBar(context, '학생 정보가 등록 되었습니다.', Colors.blue);
+            //     } else {
+            //       if (!context.mounted) return;
+            //       _snackBar(context, '오류가 발생했습니다.', Colors.red);
+            //     }
+            //   },
+            //   child: const Text('입력'),
+            // ),
           ],
         ),
       ),

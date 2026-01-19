@@ -12,14 +12,15 @@ import 'package:student/vm/weather_provider.dart';
   Update log: 
     DUMMY 00/00/0000 00:00, 'Point X, Description', Creator: Chansol, Park
           18/01/2026 15:35, 'Point 1, Forecast added', Creator: Chansol, Park
+          19/01/2026 15:27, 'Point 2, Widget's width default set to MediaQuery.of(context).size.width', Creator: Chansol, Park
   Version: 1.0
   Dependency: 
 */
 
 class AnimatedColorButton extends ConsumerStatefulWidget {
-  final double width;
-  final double height;
-  const AnimatedColorButton({super.key, this.width = 160, this.height = 72});
+  final double? width;
+  final double? height;
+  const AnimatedColorButton({super.key, this.width, this.height});
 
   @override
   ConsumerState<AnimatedColorButton> createState() =>
@@ -69,6 +70,8 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
 
   @override
   Widget build(BuildContext context) {
+    //  Point 2
+    final w = widget.width ?? MediaQuery.sizeOf(context).width;
     final weatherAsync = ref.watch(
       weatherProvider,
     ); //  When the weather changes, setstate
@@ -79,60 +82,67 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, _) {
-        final colorSets = Color.lerp(
-          //  Set color lerps for gradient
-          colors[0],
-          colors[1],
-          Curves.easeInOut.transform(_animationController.value),
-        ) ?? colors[0];
+        final colorSets =
+            Color.lerp(
+              //  Set color lerps for gradient
+              colors[0],
+              colors[1],
+              Curves.easeInOut.transform(_animationController.value),
+            ) ??
+            colors[0];
         return weatherAsync.when(
           data: (data) {
-            return Transform.translate(
-              offset: Offset(0, animY.value),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: GestureDetector(
-                  //  Point 1
-                  onTap: () {
-                    showModalBottomSheet(
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      context: context,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(14),
-                        ),
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GestureDetector(
+                //  Point 1
+                onTap: () {
+                  showModalBottomSheet(
+                    isScrollControlled: true,
+                    isDismissible: true,
+                    enableDrag: true,
+                    useSafeArea: true,
+                    backgroundColor: Colors.transparent,
+                    context: context,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(14),
                       ),
-                      builder: (_) => Consumer(
-                        builder: (context, ref, _) {
-                          final forecastAsync = ref.watch(forecastProvider);
-                          return forecastBottomSheet(forecastAsync);
-                        },
+                    ),
+                    builder: (_) => Consumer(
+                      builder: (context, ref, _) {
+                        final forecastAsync = ref.watch(forecastProvider);
+                        return forecastBottomSheet(forecastAsync);
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  width: w,
+                  height: widget.height ?? 72,
+                  decoration: BoxDecoration(
+                    color: colorSets,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Transform.translate(
+                        offset: Offset(0, animY.value),
+                        child: image(data, h: 100, w: 100),
                       ),
-                    );
-                  },
-                  child: Container(
-                    width: widget.width,
-                    height: widget.height,
-                    decoration: BoxDecoration(
-                      color: colorSets,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [image(data), Text(data)],
-                    ),
+                      Text(data),
+                    ],
                   ),
                 ),
               ),
             );
           },
           error: (error, stackTrace) {
-            return Center(child:Text('Error: $error'));
+            return Center(child: Text('Error: $error'));
           },
           loading: () {
-            return const Center(child:CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           },
         );
       },
@@ -140,7 +150,7 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
   } //  build
 
   //  Widget
-  Widget image(String resultdata) {
+  Widget image(String resultdata, {double? w = 50, double? h = 50}) {
     String assetPath;
     switch (resultdata) {
       case '맑음':
@@ -158,28 +168,53 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
       default:
         assetPath = 'images/error.png';
     }
-    return Image.asset(assetPath, width: 50, height: 50, fit: BoxFit.contain);
+    return Image.asset(assetPath, width: w, height: h, fit: BoxFit.contain);
   }
 
   //  Point 1
   Widget forecastBottomSheet(AsyncValue<List<String>> notifier) {
+    final forecolor = ref.watch(forecastColorProvider); //  when forecast Changed
     return notifier.when(
       data: (data) {
-        return ListView.builder(
-          itemCount: data.length,
-          itemBuilder: (context, index) {
-            return Card(
-              child: Column(
-                children: [
-                  Row(children: [image(data[index]), Text(data[index])]),
-                ],
+        return AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Container(
+              color: Colors.transparent,
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemCount: data.length,
+                itemBuilder: (context, index) {
+                  final foreColorsets =
+                      Color.lerp(
+                        //  Set color lerps for gradient
+                        forecolor[index][0],
+                        forecolor[index][1],
+                        Curves.easeInOut.transform(_animationController.value),
+                      ) ??
+                      forecolor[index][0];
+                  return Material(
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      tileColor: foreColorsets,
+                      leading: Transform.translate(
+                        offset: Offset(0, (animY.value)),
+                        child: image(data[index]),
+                      ),
+                      title: Text('${index + 1}시간 후: ${data[index]}'),
+                    ),
+                  );
+                },
               ),
             );
           },
         );
       },
-      error: (error, stackTrace) => Center(child:Text('Error: $error'),),
-      loading: () => const Center(child:CircularProgressIndicator(),)
+      error: (error, stackTrace) => Center(child: Text('Error: $error')),
+      loading: () => const Center(child: CircularProgressIndicator()),
     );
   }
 } //  class

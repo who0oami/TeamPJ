@@ -1,7 +1,7 @@
 /* 
 Description : Homework Model for Firebase
 Date : 2026-1-16
-Author : 황민욱
+Author : 황민욱 / 정시온이랑 수정
 */
 
 import 'package:cloud_firestore/cloud_firestore.dart';

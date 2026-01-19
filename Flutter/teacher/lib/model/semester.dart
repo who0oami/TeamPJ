@@ -1,3 +1,10 @@
+/* 
+Description : semester 테이블 구성
+Date : 2026-1-16
+Author : 민재
+*/
+
+
 class Semester {
  final int? semester_id;
  final String semester_name;

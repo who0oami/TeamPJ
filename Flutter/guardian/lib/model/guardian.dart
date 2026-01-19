@@ -18,6 +18,7 @@ class Guardian {
   String guardian_name;
   String guardian_email;
   String guardian_password;
+  String guardian_phone;
   String sub_guardian_name;
   String sub_guardian_phone;
 
@@ -27,6 +28,7 @@ class Guardian {
     required this.guardian_name,
     required this.guardian_email,
     required this.guardian_password,
+    required this.guardian_phone,
     required this.sub_guardian_name,
     required this.sub_guardian_phone,
   });
@@ -35,8 +37,9 @@ class Guardian {
   factory Guardian.fromJson(Map<String, dynamic> json) {
     return Guardian(
       guardian_id: json['guardian_id'],
-      guardian_name: json['guardian_name'],
+      guardian_name: json['guardian_name']??'',
       guardian_email: json['guardian_email'],
+      guardian_phone: json['guardian_phone'],
       guardian_password: json['guardian_password'],
       sub_guardian_name: json['sub_guardian_name'],
       sub_guardian_phone: json['sub_guardian_phone'],
@@ -50,6 +53,7 @@ class Guardian {
       'guardian_name': guardian_name,
       'guardian_email': guardian_email,
       'guardian_password': guardian_password,
+      'guardian_phone':guardian_phone,
       'sub_guardian_name': sub_guardian_name,
       'sub_guardian_phone': sub_guardian_phone,
     };
@@ -65,6 +69,7 @@ class Guardian {
     String? guardian_name,
     String? guardian_email,
     String? guardian_password,
+    String? guardian_phone,
     String? sub_guardian_name,
     String? sub_guardian_phone,
   }) {
@@ -73,6 +78,7 @@ class Guardian {
       guardian_name: guardian_name ?? this.guardian_name,
       guardian_email: guardian_email ?? this.guardian_email,
       guardian_password: guardian_password ?? this.guardian_password,
+      guardian_phone:guardian_phone?? this.guardian_phone,
       sub_guardian_name: sub_guardian_name ?? this.sub_guardian_name,
       sub_guardian_phone: sub_guardian_phone ?? this.sub_guardian_phone,
     );

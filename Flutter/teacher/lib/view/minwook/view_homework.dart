@@ -1,0 +1,108 @@
+/* 
+Description : Homework 목록 페이지
+Date : 2026-1-19
+Author : 황민욱
+*/
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teacher/model/homework.dart';
+import 'package:teacher/vm/minwook/drawer.dart';
+import 'package:teacher/vm/minwook/homework_provider.dart';
+
+class ViewHomework extends ConsumerStatefulWidget {
+  const ViewHomework({super.key});
+
+  @override
+  ConsumerState<ViewHomework> createState() => _ViewHomeworkState();
+}
+
+class _ViewHomeworkState extends ConsumerState<ViewHomework> {
+  @override
+  Widget build(BuildContext context) {
+
+    final homeworkAsync = ref.watch(homeworkListProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: Text('숙제 목록'), centerTitle: true),
+      drawer: AppDrawer(currentPage: widget),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: homeworkAsync.when(
+          data: (homeworkList) => homeworkList.isEmpty
+            ? Center(child: Text('숙제가 없습니다.'))
+            : ListView.builder(
+              itemCount: homeworkList.length,
+              itemBuilder: (context, index) {
+                Homework homework = homeworkList[index];
+                return Card(
+                  elevation: 0.8,
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      //
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: SizedBox(
+                              width: 30,
+                              child: Text(
+                                (homeworkList.length - index).toString(),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              homework.homework_title,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 20),
+                                child: Text(
+                                  '김상준', // 임시 교사 이름
+                                  style:  TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              Text(
+                                homework.homework_insertdate.toString().substring(0, 10),
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(left: 20),
+                            child: Icon(Icons.chevron_right, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          error: (error, stackTrace) => Center(child: Text('Error: $error')),
+          loading: () => Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    );
+  } // build
+} // class

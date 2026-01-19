@@ -41,48 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA5rX5IYagd6lzFyANm7uZIdTbpM_w-8lQ',
-    appId: '1:840998826082:web:b2b4466ac566c203b2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    authDomain: 'atti-5d394.firebaseapp.com',
-    storageBucket: 'atti-5d394.firebasestorage.app',
-    measurementId: 'G-8JRLZNZEDR',
+    apiKey: 'AIzaSyB09pNQDAWQQ7iNDWLtDCkwU1JIjnbM8x0',
+    appId: '1:106985534946:web:1982f59a20ff5fc68bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    authDomain: 'atti-c2a9d.firebaseapp.com',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCfVOGRiCCOJfbC1EOHg26lRsDjVdR6Rto',
-    appId: '1:840998826082:android:2939b5a0dfef3823b2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    storageBucket: 'atti-5d394.firebasestorage.app',
+    apiKey: 'AIzaSyBkMyPnSHzULLfU1T4h8UX3DdexH9U0sUk',
+    appId: '1:106985534946:android:b83bae59687d51f98bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDcdaXtf3302msqTTbfWVVd7YmDJCqynho',
-    appId: '1:840998826082:ios:ecca05205ce46c9fb2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    storageBucket: 'atti-5d394.firebasestorage.app',
+    apiKey: 'AIzaSyCQJybBInLBoE59cAx4_KSH4nVIjEFGcpA',
+    appId: '1:106985534946:ios:4ba77b8112d38dec8bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
     iosBundleId: 'com.example.teacher',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDcdaXtf3302msqTTbfWVVd7YmDJCqynho',
-    appId: '1:840998826082:ios:ecca05205ce46c9fb2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    storageBucket: 'atti-5d394.firebasestorage.app',
+    apiKey: 'AIzaSyCQJybBInLBoE59cAx4_KSH4nVIjEFGcpA',
+    appId: '1:106985534946:ios:4ba77b8112d38dec8bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
     iosBundleId: 'com.example.teacher',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyA5rX5IYagd6lzFyANm7uZIdTbpM_w-8lQ',
-    appId: '1:840998826082:web:800beec899e9398db2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    authDomain: 'atti-5d394.firebaseapp.com',
-    storageBucket: 'atti-5d394.firebasestorage.app',
-    measurementId: 'G-N0EZZCKL3D',
+    apiKey: 'AIzaSyB09pNQDAWQQ7iNDWLtDCkwU1JIjnbM8x0',
+    appId: '1:106985534946:web:3c8050f76a1e22048bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    authDomain: 'atti-c2a9d.firebaseapp.com',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
   );
+
 }

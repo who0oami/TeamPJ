@@ -53,8 +53,8 @@ def get_current(
         "authKey": AUTH_KEY,
         "base_date": base_date, # Current date
         "base_time": base_time, # Current Time
-        "nx": 55, # Position x
-        "ny": 127, # Position y
+        "nx": 61, # Position x
+        "ny": 126, # Position y
         "dataType": "JSON",
         "numOfRows": 1000,
         "pageNo": 1,
@@ -98,8 +98,8 @@ def get_forecast(
         "authKey": AUTH_KEY,
         "base_date": base_date, # Current date
         "base_time": base_time, # Current Time
-        "nx": 55, # Position x
-        "ny": 127, # Position y
+        "nx": 61, # Position x
+        "ny": 126, # Position y
         "dataType": "JSON",
         "numOfRows": 1000,
         "pageNo": 1,

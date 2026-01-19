@@ -41,48 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA5rX5IYagd6lzFyANm7uZIdTbpM_w-8lQ',
-    appId: '1:840998826082:web:e7a558cd5138c350b2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    authDomain: 'atti-5d394.firebaseapp.com',
-    storageBucket: 'atti-5d394.firebasestorage.app',
-    measurementId: 'G-Y0NJY14HVN',
+    apiKey: 'AIzaSyB09pNQDAWQQ7iNDWLtDCkwU1JIjnbM8x0',
+    appId: '1:106985534946:web:7cbbb9a211a64d398bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    authDomain: 'atti-c2a9d.firebaseapp.com',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCfVOGRiCCOJfbC1EOHg26lRsDjVdR6Rto',
-    appId: '1:840998826082:android:c5ef0e832edfe15eb2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    storageBucket: 'atti-5d394.firebasestorage.app',
+    apiKey: 'AIzaSyBkMyPnSHzULLfU1T4h8UX3DdexH9U0sUk',
+    appId: '1:106985534946:android:9b95a84c1a8224a48bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDcdaXtf3302msqTTbfWVVd7YmDJCqynho',
-    appId: '1:840998826082:ios:b5e4808b8642537fb2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    storageBucket: 'atti-5d394.firebasestorage.app',
+    apiKey: 'AIzaSyCQJybBInLBoE59cAx4_KSH4nVIjEFGcpA',
+    appId: '1:106985534946:ios:88cfb043d35307098bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
     iosBundleId: 'com.example.guardian',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDcdaXtf3302msqTTbfWVVd7YmDJCqynho',
-    appId: '1:840998826082:ios:b5e4808b8642537fb2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    storageBucket: 'atti-5d394.firebasestorage.app',
+    apiKey: 'AIzaSyCQJybBInLBoE59cAx4_KSH4nVIjEFGcpA',
+    appId: '1:106985534946:ios:88cfb043d35307098bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
     iosBundleId: 'com.example.guardian',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyA5rX5IYagd6lzFyANm7uZIdTbpM_w-8lQ',
-    appId: '1:840998826082:web:b2b4466ac566c203b2e13b',
-    messagingSenderId: '840998826082',
-    projectId: 'atti-5d394',
-    authDomain: 'atti-5d394.firebaseapp.com',
-    storageBucket: 'atti-5d394.firebasestorage.app',
-    measurementId: 'G-8JRLZNZEDR',
+    apiKey: 'AIzaSyB09pNQDAWQQ7iNDWLtDCkwU1JIjnbM8x0',
+    appId: '1:106985534946:web:1982f59a20ff5fc68bf5bb',
+    messagingSenderId: '106985534946',
+    projectId: 'atti-c2a9d',
+    authDomain: 'atti-c2a9d.firebaseapp.com',
+    storageBucket: 'atti-c2a9d.firebasestorage.app',
   );
+
 }

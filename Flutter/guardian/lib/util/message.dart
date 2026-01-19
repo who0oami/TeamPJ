@@ -20,7 +20,7 @@ class Message {
   } // snackBar
 
   // Dialog
-  static void dialog(BuildContext context,String title,String content,Color color,String routeName) {
+  static void dialog(BuildContext context,String title,String content,Color color) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -33,7 +33,6 @@ class Message {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(ctx);
                   Navigator.pop(ctx);
                 },
                 child: const Text('확인'),

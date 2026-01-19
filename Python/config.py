@@ -2,4 +2,7 @@ hostip="127.0.0.1"
 hostuser='openuser'
 hostpassword='1234'
 hostdatabase='atti'
-awsPort = 8000
+hostport=13306
+
+server_host = "0.0.0.0"
+server_port = 8000

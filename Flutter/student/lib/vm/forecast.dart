@@ -33,7 +33,7 @@ class ForecastProvider extends AsyncNotifier<List<String>> {
 
   Future<List<String>> fetchForecast() async {
     final uri = Uri.parse(
-      'http://${config.getForwardIP()}:${config.forwardport}/weather/forecast',
+      'http://${config.getForwardIP()}:${config.forwardport}/restitutor/forecast',
     );
     final res = await http.get(uri);
 

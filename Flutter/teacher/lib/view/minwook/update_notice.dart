@@ -5,15 +5,20 @@ Author : 황민욱
 */
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class UpdateNotice extends StatefulWidget {
+class UpdateNotice extends ConsumerStatefulWidget {
   const UpdateNotice({super.key});
 
   @override
-  State<UpdateNotice> createState() => _UpdateNoticeState();
+  ConsumerState<UpdateNotice> createState() => _UpdateNoticeState();
 }
 
-class _UpdateNoticeState extends State<UpdateNotice> {
+class _UpdateNoticeState extends ConsumerState<UpdateNotice> {
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

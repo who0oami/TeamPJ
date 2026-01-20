@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teacher/model/homework.dart';
 import 'package:teacher/vm/minwook/drawer.dart';
 import 'package:teacher/vm/minwook/homework_provider.dart';
+import 'package:teacher/vm/minwook/teacher_provider.dart';
 
 class ViewHomework extends ConsumerStatefulWidget {
   const ViewHomework({super.key});
@@ -35,6 +36,7 @@ class _ViewHomeworkState extends ConsumerState<ViewHomework> {
               itemCount: homeworkList.length,
               itemBuilder: (context, index) {
                 Homework homework = homeworkList[index];
+                final teacherNameAsync = ref.watch(teacherNameByIdProvider(homework.teacher_id));
                 return Card(
                   elevation: 0.8,
                   margin: const EdgeInsets.symmetric(vertical: 6),
@@ -52,7 +54,7 @@ class _ViewHomeworkState extends ConsumerState<ViewHomework> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(right: 10),
+                            padding: const EdgeInsets.only(right: 15),
                             child: SizedBox(
                               width: 30,
                               child: Text(
@@ -68,7 +70,7 @@ class _ViewHomeworkState extends ConsumerState<ViewHomework> {
                           ),
                           Expanded(
                             child: Text(
-                              homework.homework_title,
+                              '[${homework.homework_subject}]  ${homework.homework_title}',
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
@@ -77,9 +79,10 @@ class _ViewHomeworkState extends ConsumerState<ViewHomework> {
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(right: 20),
-                                child: Text(
-                                  '김상준', // 임시 교사 이름
-                                  style:  TextStyle(fontSize: 16),
+                                child: teacherNameAsync.when(
+                                  data: (name) => Text(name, style: TextStyle(fontSize: 16)),
+                                  loading: () => Text('...', style: TextStyle(fontSize: 16)),
+                                  error: (error, stackTrace) => Text('$error', style: TextStyle(fontSize: 16)),
                                 ),
                               ),
                               Text(
@@ -88,8 +91,8 @@ class _ViewHomeworkState extends ConsumerState<ViewHomework> {
                               ),
                             ],
                           ),
-                          const Padding(
-                            padding: EdgeInsets.only(left: 20),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
                             child: Icon(Icons.chevron_right, color: Colors.grey),
                           ),
                         ],

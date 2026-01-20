@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:student/vm/color_provider.dart';
-import 'package:student/vm/forecast.dart';
-import 'package:student/vm/weather_provider.dart';
+import 'package:student/view/restitutor/weather/forecastpage.dart';
+import 'package:student/vm/restitutor/color_provider.dart';
+import 'package:student/vm/restitutor/weather_provider.dart';
 
 //  Weather widget
 /*
@@ -13,6 +13,7 @@ import 'package:student/vm/weather_provider.dart';
     DUMMY 00/00/0000 00:00, 'Point X, Description', Creator: Chansol, Park
           18/01/2026 15:35, 'Point 1, Forecast added', Creator: Chansol, Park
           19/01/2026 15:27, 'Point 2, Widget's width default set to MediaQuery.of(context).size.width', Creator: Chansol, Park
+          20/01/2026 11:00, 'Point 3, Additional Widget can be installed inside Row', Creator: Chansol, Park
   Version: 1.0
   Dependency: 
 */
@@ -20,7 +21,13 @@ import 'package:student/vm/weather_provider.dart';
 class AnimatedColorButton extends ConsumerStatefulWidget {
   final double? width;
   final double? height;
-  const AnimatedColorButton({super.key, this.width, this.height});
+  final Widget? childWidget;
+  const AnimatedColorButton({
+    super.key,
+    this.width,
+    this.height,
+    this.childWidget,
+  });
 
   @override
   ConsumerState<AnimatedColorButton> createState() =>
@@ -95,26 +102,12 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
             return Padding(
               padding: const EdgeInsets.all(8.0),
               child: GestureDetector(
-                //  Point 1
+                //  Point 1, 2
                 onTap: () {
-                  showModalBottomSheet(
-                    isScrollControlled: true,
-                    isDismissible: true,
-                    enableDrag: true,
-                    useSafeArea: true,
-                    backgroundColor: Colors.transparent,
-                    context: context,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(14),
-                      ),
-                    ),
-                    builder: (_) => Consumer(
-                      builder: (context, ref, _) {
-                        final forecastAsync = ref.watch(forecastProvider);
-                        return forecastBottomSheet(forecastAsync);
-                      },
-                    ),
+                  //  Move to Forecast page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => Forecastpage()),
                   );
                 },
                 child: Container(
@@ -131,7 +124,16 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
                         offset: Offset(0, animY.value),
                         child: image(data, h: 100, w: 100),
                       ),
-                      Text(data),
+                      Text(
+                        data,
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      //  Point 3
+                      if (widget.childWidget != null) widget.childWidget!,
                     ],
                   ),
                 ),
@@ -169,52 +171,5 @@ class _AnimatedColorButtonState extends ConsumerState<AnimatedColorButton>
         assetPath = 'images/error.png';
     }
     return Image.asset(assetPath, width: w, height: h, fit: BoxFit.contain);
-  }
-
-  //  Point 1
-  Widget forecastBottomSheet(AsyncValue<List<String>> notifier) {
-    final forecolor = ref.watch(forecastColorProvider); //  when forecast Changed
-    return notifier.when(
-      data: (data) {
-        return AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Container(
-              color: Colors.transparent,
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemCount: data.length,
-                itemBuilder: (context, index) {
-                  final foreColorsets =
-                      Color.lerp(
-                        //  Set color lerps for gradient
-                        forecolor[index][0],
-                        forecolor[index][1],
-                        Curves.easeInOut.transform(_animationController.value),
-                      ) ??
-                      forecolor[index][0];
-                  return Material(
-                    borderRadius: BorderRadius.circular(16),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      tileColor: foreColorsets,
-                      leading: Transform.translate(
-                        offset: Offset(0, (animY.value)),
-                        child: image(data[index]),
-                      ),
-                      title: Text('${index + 1}시간 후: ${data[index]}'),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        );
-      },
-      error: (error, stackTrace) => Center(child: Text('Error: $error')),
-      loading: () => const Center(child: CircularProgressIndicator()),
-    );
   }
 } //  class

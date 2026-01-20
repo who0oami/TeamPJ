@@ -15,6 +15,7 @@
 class Guardian {
   //  Property
   int? guardian_id; //  PK
+  int? student_id; //  FK
   String guardian_name;
   String guardian_email;
   String guardian_password;
@@ -25,6 +26,7 @@ class Guardian {
   //  Constructor
   Guardian({
     this.guardian_id,
+    this.student_id,
     required this.guardian_name,
     required this.guardian_email,
     required this.guardian_password,
@@ -36,7 +38,8 @@ class Guardian {
   //  Decode from Json type
   factory Guardian.fromJson(Map<String, dynamic> json) {
     return Guardian(
-      guardian_id: json['guardian_id'],
+      guardian_id: _toInt(json['guardian_id']),
+      student_id: _toInt(json['student_id']),
       guardian_name: json['guardian_name']??'',
       guardian_email: json['guardian_email'],
       guardian_phone: json['guardian_phone'],
@@ -50,6 +53,7 @@ class Guardian {
   Map<String, dynamic> toJson() {
     return {
       'guardian_id': guardian_id,
+      'student_id': student_id,
       'guardian_name': guardian_name,
       'guardian_email': guardian_email,
       'guardian_password': guardian_password,
@@ -75,6 +79,7 @@ class Guardian {
   }) {
     return Guardian(
       guardian_id: guardian_id,
+      student_id: student_id,
       guardian_name: guardian_name ?? this.guardian_name,
       guardian_email: guardian_email ?? this.guardian_email,
       guardian_password: guardian_password ?? this.guardian_password,
@@ -83,4 +88,10 @@ class Guardian {
       sub_guardian_phone: sub_guardian_phone ?? this.sub_guardian_phone,
     );
   }
+}
+
+int? _toInt(dynamic value) {
+  if (value is int) return value;
+  if (value == null) return null;
+  return int.tryParse(value.toString());
 }

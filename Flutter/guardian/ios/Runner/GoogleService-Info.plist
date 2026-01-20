@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyDcdaXtf3302msqTTbfWVVd7YmDJCqynho</string>
+	<string>AIzaSyCQJybBInLBoE59cAx4_KSH4nVIjEFGcpA</string>
 	<key>GCM_SENDER_ID</key>
-	<string>840998826082</string>
+	<string>106985534946</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.example.guardian</string>
 	<key>PROJECT_ID</key>
-	<string>atti-5d394</string>
+	<string>atti-c2a9d</string>
 	<key>STORAGE_BUCKET</key>
-	<string>atti-5d394.firebasestorage.app</string>
+	<string>atti-c2a9d.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:840998826082:ios:b5e4808b8642537fb2e13b</string>
+	<string>1:106985534946:ios:88cfb043d35307098bf5bb</string>
 </dict>
 </plist>

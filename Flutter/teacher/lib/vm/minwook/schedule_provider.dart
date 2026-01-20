@@ -35,19 +35,11 @@ class ScheduleActionProvider extends Notifier<void>{
   CollectionReference get _schedule => ref.read(scheduleCollectionProvider);
 
   Future<void> addSchedule() async{
-    await _schedule.add(
-      {
-        
-      }
-    );
+    await _schedule.add({});
   }
 
   Future<void> updateSchedule() async{
-    await _schedule.doc().update(
-      {
-
-      }
-    );
+    await _schedule.doc().update({});
   }
 
   Future<void> deleteSchedule() async{

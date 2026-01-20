@@ -16,16 +16,6 @@ final timetableCollectionProvider = Provider<CollectionReference<Map<String, dyn
   .collection('timetable'),
 );
 
-// StreamProvider
-final timetableListProvider = StreamProvider<List<Timetable>>(
-  (ref) {
-    final col = ref.watch(timetableCollectionProvider);
-    return col.orderBy('homework_insertdate', descending: true).snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Timetable.fromMap(doc.data(), doc.id)).toList();
-    });
-  },
-);
-
 // 시간표 필터 Provider => 학기, 학년, 반에 따라
 final timetableByFilterProvider = StreamProvider.family<Timetable?, ({String semester, int grade, int classNum})>(
   (ref, f) {

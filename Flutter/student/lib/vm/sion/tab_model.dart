@@ -1,3 +1,9 @@
+/* 
+Description : tab model
+Date : 2026-1-19
+Author : 정시온
+*/
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Tabnotifier extends Notifier<int>{

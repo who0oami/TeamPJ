@@ -1,7 +1,7 @@
 /* 
 Description : Homework Model for Firebase
 Date : 2026-1-16
-Author : 황민욱
+Author : 황민욱 / 정시온이랑 수정
 */
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,11 +35,12 @@ class Homework {
       homework_title: map['homework_title'] ?? "",
       homework_contents: map['homework_contents'] ?? "",
       homework_subject: map['homework_subject'] ?? "",
-      homework_duedate: (map['homework_duedate'] as Timestamp).toDate(),
-      homework_insertdate: (map['homework_insertdate'] as Timestamp).toDate(),
-      homework_updatedate: (map['homework_updatedate'] as Timestamp).toDate(),
+homework_duedate: (map['homework_duedate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+homework_insertdate: (map['homework_insertdate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+homework_updatedate: (map['homework_updatedate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       homework_images: List<String>.from(map['homework_images'] ?? []),
       teacher_id: map['teacher_id'] ?? 0,
     );
   }
 }
+

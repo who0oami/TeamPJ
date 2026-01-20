@@ -1,10 +1,16 @@
+/* 
+Description : notice tabbar page - 공지사항, 숙제, 시간표, 급식표 나오게 함!
+Date : 2026-1-19
+Author : 정시온
+*/
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:student/util/acolor.dart';
 import 'package:student/view/notice/homework_page.dart';
 import 'package:student/view/notice/lunch_page.dart';
 import 'package:student/view/notice/notice_page.dart';
-import 'package:student/view/notice/schedule_page.dart';
+import 'package:student/view/notice/timetable_page.dart';
 import 'package:student/vm/sion/notice_provider.dart';
 import 'package:student/vm/sion/tab_model.dart';
 
@@ -17,7 +23,7 @@ class NoticeTabbar extends ConsumerStatefulWidget { // Provider의 TabBar는 Sta
 
 class _NoticeState extends ConsumerState<NoticeTabbar> with SingleTickerProviderStateMixin{ //<<<<
   late TabController _tabController; 
-  final List<Widget> _pages = [NoticePage(), HomeworkPage(),SchedulePage(),LunchPage()];
+  final List<Widget> _pages = [NoticePage(), HomeworkPage(),TimetablePage(),LunchPage()];
 
   @override
   void initState() {

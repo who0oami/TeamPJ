@@ -1,3 +1,9 @@
+/* 
+Description : notice page - firebase에 데이터 추출
+Date : 2026-1-19
+Author : 정시온
+*/
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';

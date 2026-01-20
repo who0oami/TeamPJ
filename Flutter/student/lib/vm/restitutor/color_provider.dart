@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:student/vm/forecast.dart';
-import 'package:student/vm/weather_provider.dart';
+import 'package:student/vm/restitutor/forecast.dart';
+import 'package:student/vm/restitutor/weather_provider.dart';
 
 //  ColorProvider
 /*
@@ -46,11 +46,11 @@ class ColorProvider extends Notifier<List<Color>> {
   @override
   List<Color> build() {
     final weatherAsync = ref.watch(weatherProvider);
-    final wResult = weatherAsync.asData?.value;
-    if (wResult == null) {
-      return getColors('에러');
-    }
-    return getColors(wResult);
+    return weatherAsync.when(
+      data: (wResult) => getColors(wResult),
+      loading: () => ref.read(sunnyColorsProvider),
+      error: (_, _) => ref.read(errorColorsProvider),
+    );
   }
 
   List<Color> getColors(String input) {
@@ -73,18 +73,24 @@ class ColorProvider extends Notifier<List<Color>> {
 
 final forecastColorProvider =
     NotifierProvider<ForecastColorProvider, List<List<Color>>>(
-  ForecastColorProvider.new,
-);
+      ForecastColorProvider.new,
+    );
 
 class ForecastColorProvider extends Notifier<List<List<Color>>> {
   @override
   List<List<Color>> build() {
     final forecastAsync = ref.watch(forecastProvider);
-    final fResult = forecastAsync.asData?.value;
-    if (fResult == null || fResult.isEmpty) {
-      return [ref.read(errorColorsProvider)];
-    }
-    return foreCastGetColors(fResult);
+    
+    return forecastAsync.when(
+      data: (fResult) {
+        if (fResult.isEmpty) {
+          return const [];
+        }
+        return foreCastGetColors(fResult);
+      },
+      loading: () => const [],
+      error: (_, __) => [ref.read(errorColorsProvider)],
+    );
   }
 
   List<List<Color>> foreCastGetColors(List<String> input) {

@@ -5,12 +5,23 @@ Description : 화면구성 작업
 
 Date : 2026-01-19
 Author : 이상현
+
+Description : 
+  Weather, Calender widget implemented
+  Attand system added
+  Changed Consumer > CunsomerStateWidget
+
+Date : 2026-01-20
+Author : Chansol, Park
 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
+import 'package:student/view/restitutor/calendar.dart';
+import 'package:student/view/restitutor/weather/weather.dart';
+import 'package:student/vm/restitutor/attendance_provider.dart';
 import 'package:student/vm/sanghyun/student_provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../util/acolor.dart';
@@ -20,14 +31,20 @@ import '../model/student.dart';
 final selectedDayProvider = StateProvider<DateTime?>((ref) => DateTime.now());
 final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
-class MainPage extends ConsumerWidget {
+class MainPage extends ConsumerStatefulWidget {
   const MainPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends ConsumerState<MainPage> {
+
+  @override
+  Widget build(BuildContext context) {
     final selectedDay = ref.watch(selectedDayProvider);
-    final focusedDay = ref.watch(focusedDayProvider);
     final studentAsync = ref.watch(studentFutureProvider);
+    final attendAsync = ref.watch(attendProvider);
 
     String formattedDate = DateFormat(
       'yyyy.MM.dd EEEE',
@@ -43,17 +60,20 @@ class MainPage extends ConsumerWidget {
       ),
       backgroundColor: Acolor.onPrimaryColor,
       body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
         child: Column(
           children: [
             _buildDateHeader(formattedDate),
+            AnimatedColorButton(),
             _buildProfileCard(studentAsync),
             _buildSectionTitle("오늘 일정"),
-            _buildCalendar(ref, selectedDay, focusedDay),
+            Calendar(),
             _buildSectionTitle("시간표"),
             _buildTimetable(),
             _buildSectionTitle("오늘 급식"),
             _buildMealGrid(),
             const SizedBox(height: 100),
+            AttendancePopupGate(attendAsync: attendAsync)
           ],
         ),
       ),
@@ -143,7 +163,8 @@ class MainPage extends ConsumerWidget {
                     backgroundColor: Acolor.successBackColor,
                     shape: const StadiumBorder(),
                   ),
-                  child: Text("학교왔어요 😊",
+                  child: Text(
+                    "학교왔어요 😊",
                     style: TextStyle(
                       color: Acolor.successTextColor,
                       fontSize: 18,
@@ -173,7 +194,7 @@ class MainPage extends ConsumerWidget {
           ),
         ),
       ),
-    );//뷁
+    ); //뷁
   }
 
   Widget _buildCalendar(
@@ -220,7 +241,8 @@ class MainPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimetable() {// 시간표 줄 추가
+  Widget _buildTimetable() {
+    // 시간표 줄 추가
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
@@ -231,7 +253,14 @@ class MainPage extends ConsumerWidget {
       child: Table(
         border: TableBorder.all(color: Colors.grey.shade200),
         children: [
-          _buildTableRow(['','월','화','수','목','금',], isHeader: true), // 제일 상단
+          _buildTableRow([
+            '',
+            '월',
+            '화',
+            '수',
+            '목',
+            '금',
+          ], isHeader: true), // 제일 상단
           _buildTableRow(['1교시', '국어', '사회', '과학', '국어', '도덕']),
           _buildTableRow(['2교시', '체육', '미술', '국어', '창체', '국어']),
           _buildTableRow(['3교시', '과학', '미술', '영어', '사회', '국어']),
@@ -263,8 +292,16 @@ class MainPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMealGrid() { // 급식표
-    final List<String> meals = ['잡곡밥','미역국','미트볼','김치','미역줄기','요구르트']; // 임시로 더미 데이터 넣기
+  Widget _buildMealGrid() {
+    // 급식표
+    final List<String> meals = [
+      '잡곡밥',
+      '미역국',
+      '미트볼',
+      '김치',
+      '미역줄기',
+      '요구르트',
+    ]; // 임시로 더미 데이터 넣기
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
@@ -298,7 +335,8 @@ class MainPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmergencyButton() { // 긴급호출 버튼 위젯
+  Widget _buildEmergencyButton() {
+    // 긴급호출 버튼 위젯
     return SizedBox(
       width: 100,
       height: 100,
@@ -320,5 +358,71 @@ class MainPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+
+class AttendancePopupGate extends ConsumerStatefulWidget {
+  final AsyncValue<bool> attendAsync;
+  const AttendancePopupGate({super.key, required this.attendAsync});
+
+  @override
+  ConsumerState<AttendancePopupGate> createState() => _AttendancePopupGateState();
+}
+
+class _AttendancePopupGateState extends ConsumerState<AttendancePopupGate> {
+  bool _opened = false;
+
+  @override
+  Widget build(BuildContext context) {
+    widget.attendAsync.whenData((checked) {
+      if (!checked && !_opened) {
+        _opened = true;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            isDismissible: false,
+            enableDrag: false,
+            builder: (context) {
+              return SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("출석 체크",
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      const Text("오늘 출석체크가 필요해요!"),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await ref
+                                .read(attendProvider.notifier)
+                                .attendCheck(studentId: 1);
+
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                          child: const Text("학교왔어요 😊"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        });
+      }
+    });
+
+    return const SizedBox.shrink(); // 화면에 표시 X
   }
 }

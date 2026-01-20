@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:student/view/weather/weather.dart';
-import 'package:student/vm/calendar_provider.dart';
+import 'package:student/vm/restitutor/calendar_provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 //  Calendar page
@@ -13,6 +12,7 @@ import 'package:table_calendar/table_calendar.dart';
     DUMMY 00/00/0000 00:00, 'Point X, Description', Creator: Chansol, Park
           19/01/2026 14:15, 'Point 1, bottomNavigationBar', Creator: Chansol, Park
           19/01/2026 15:58, 'Point 2, Weather widget merged', Creator: Chansol, Park
+          20/01/2026 10:14, 'Point 3, Removed bottom sheet bar, weather, Widgetized page, Moved forecast to another page', Creator: Chansol, Park
   Version: 1.0
   Dependency: 
 */
@@ -44,19 +44,12 @@ class _CalendarState extends ConsumerState<Calendar> {
   @override
   Widget build(BuildContext context) {
     final chosenDate = ref.watch(calendarDateProvider);
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.blue[100],
-      body: Column(
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          //  Point 2
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-            child: AnimatedColorButton(
-              width: MediaQuery.of(context).size.width,
-            ),
-          ),
+          //  Point 2, 3
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
             child: Container(
@@ -74,7 +67,6 @@ class _CalendarState extends ConsumerState<Calendar> {
                 lastDay: DateTime(chosenDate.year, chosenDate.month + 1, 0),
                 calendarFormat: CalendarFormat.month,
                 availableCalendarFormats: const {CalendarFormat.month: 'month'},
-
                 headerStyle: const HeaderStyle(
                   //  Title to center
                   titleCentered: true,
@@ -83,7 +75,7 @@ class _CalendarState extends ConsumerState<Calendar> {
                   rightChevronVisible: false,
                   formatButtonVisible: false,
                 ),
-
+      
                 calendarStyle: CalendarStyle(
                   selectedDecoration: BoxDecoration(
                     color: Color(0xFFDCD6FF),
@@ -95,21 +87,21 @@ class _CalendarState extends ConsumerState<Calendar> {
                     shape: BoxShape.circle,
                   ),
                 ),
-
+      
                 daysOfWeekStyle: const DaysOfWeekStyle(
                   weekdayStyle: TextStyle(fontSize: 12),
                   weekendStyle: TextStyle(fontSize: 12, color: Colors.black),
                 ),
-
+      
                 calendarBuilders: CalendarBuilders(
                   defaultBuilder: (context, day, focusedDay) {
                     final aDate = DateTime(day.year, day.month, day.day);
-
+      
                     final List<DateTime> isWeek = chosenWeek(chosenDate);
-
+      
                     final inWeek =
                         !aDate.isBefore(isWeek[0]) && !aDate.isAfter(isWeek[1]);
-
+      
                     if (inWeek) {
                       return Container(
                         margin: const EdgeInsets.all(4),
@@ -121,6 +113,7 @@ class _CalendarState extends ConsumerState<Calendar> {
                         child: Text('${day.day}'),
                       );
                     }
+                    return null;
                   },
                   dowBuilder: (context, day) {
                     final text = [
@@ -133,7 +126,7 @@ class _CalendarState extends ConsumerState<Calendar> {
                       '일',
                     ][day.weekday - 1];
                     final isSunday = day.weekday == DateTime.sunday;
-
+      
                     return Center(
                       child: Text(
                         text,
@@ -145,7 +138,7 @@ class _CalendarState extends ConsumerState<Calendar> {
                     );
                   },
                 ),
-
+      
                 selectedDayPredicate: (day) => isSameDay(day, chosenDate),
                 onDaySelected: (day, focusedDay) {
                   ref.read(calendarDateProvider.notifier).setSelectedDay(day);
@@ -155,76 +148,8 @@ class _CalendarState extends ConsumerState<Calendar> {
           ),
         ],
       ),
-
-      //  Point 1
-      bottomNavigationBar: SafeArea(
-        bottom: false,
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
-              (states) => const IconThemeData(color: Colors.blue),
-            ),
-            labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
-              (states) => const TextStyle(color: Colors.blue, fontSize: 12),
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            child: NavigationBar(
-              backgroundColor: Colors.white,
-              animationDuration: Duration(seconds: 1),
-              //  Point 2
-              selectedIndex: tabIndex ?? 0,
-              indicatorColor: Colors.transparent,
-              onDestinationSelected: (i) => setState(() => tabIndex = i),
-              destinations: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: tabIndex == 0 ? Colors.amberAccent : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: NavigationDestination(
-                      icon: Icon(Icons.check_circle_outline),
-                      label: '출석 확인',
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: tabIndex == 1 ? Colors.amberAccent : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: NavigationDestination(
-                      icon: Icon(Icons.north_east),
-                      label: '조퇴 확인',
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: tabIndex == 2 ? Colors.amberAccent : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: NavigationDestination(
-                      icon: Icon(Icons.location_on_outlined),
-                      label: '외출 확인',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
+
+    //  Point 1, 3
   } //  build
 } //  class

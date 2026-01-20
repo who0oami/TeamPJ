@@ -50,7 +50,7 @@ class InsertTimetable extends ConsumerWidget {
                   error: (e, _) => Center(child: Text('Error: $e')),
                   data: (tt) {
                     if (tt == null) {
-                      return const Center(child: Text('해당 학기/학년/반 시간표 데이터가 없음'));
+                      return const Center(child: Text('시간표 데이터가 없음'));
                     }
                     
                     return Container(

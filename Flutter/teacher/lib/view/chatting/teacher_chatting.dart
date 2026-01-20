@@ -1,41 +1,245 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:io' show Platform;
+import 'package:intl/intl.dart';
 
-class TeacherChatting extends ConsumerStatefulWidget {
+// --- [Providers] ---
+
+// 1. MySQL 가디언/학생/카테고리 목록 로더
+final chatTargetProvider = FutureProvider<List<dynamic>>((ref) async {
+  final String host = Platform.isAndroid ? "10.0.2.2" : "127.0.0.1";
+  final String url = 'http://$host:8000/sanghyun/chat_list';
+
+  try {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return json.decode(utf8.decode(response.bodyBytes));
+    } else {
+      throw Exception('서버 응답 오류');
+    }
+  } catch (e) {
+    throw Exception('MySQL 서버 연결 확인 필요');
+  }
+});
+
+// 2. 'atti' 데이터베이스 인스턴스 전용 컬렉션 참조
+final chattingCollectionProvider = Provider<CollectionReference>(
+  (ref) => FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'atti')
+      .collection('chatting'),
+);
+
+// 3. 현재 선택된 문의 대상 정보
+final selectedInquiryProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+
+// 4. 실시간 채팅 스트림 (Firebase)
+final chatStreamProvider = StreamProvider.autoDispose((ref) {
+  final inquiry = ref.watch(selectedInquiryProvider);
+  if (inquiry == null) return Stream.value([]);
+  
+  final col = ref.watch(chattingCollectionProvider);
+  
+  return col
+      .where('guardian_id', isEqualTo: inquiry['guardian_id'])
+      .orderBy('chatting_date', descending: false)
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) {
+            final d = doc.data() as Map<String, dynamic>;
+            DateTime date = (d['chatting_date'] is Timestamp) 
+                ? (d['chatting_date'] as Timestamp).toDate() 
+                : DateTime.now();
+
+            return {
+              'contents': d['chatting_contents'] ?? '',
+              'isTeacher': d['teacher_id'] != null,
+              'date': date,
+            };
+          }).toList());
+});
+
+// --- [Main View] ---
+
+class TeacherChatting extends ConsumerWidget {
   const TeacherChatting({super.key});
 
   @override
-  ConsumerState<TeacherChatting> createState() => _TeacherChattingState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Row(
+        children: [
+          // 왼쪽 목록 (MySQL 데이터)
+          SizedBox(width: 400, child: _buildSidebar(ref)),
+          const VerticalDivider(width: 1, color: Color(0xFFEEEEEE)),
+          // 오른쪽 채팅 (Firebase 데이터)
+          const Expanded(child: _ChatDetailView()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar(WidgetRef ref) {
+    final listAsync = ref.watch(chatTargetProvider);
+    final selectedInquiry = ref.watch(selectedInquiryProvider);
+
+    return Column(
+      children: [
+        const SizedBox(height: 60),
+        const Text('문의 내역', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        Expanded(
+          child: listAsync.when(
+            data: (items) => ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (ctx, idx) {
+                final item = items[idx];
+                final bool isSelected = selectedInquiry?['guardian_id'] == item['guardian_id'];
+                
+                Uint8List? img;
+                if (item['student_image'] != null) img = base64Decode(item['student_image']);
+
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor: const Color(0xFFFFF9E6),
+                  onTap: () => ref.read(selectedInquiryProvider.notifier).state = item,
+                  leading: CircleAvatar(
+                    backgroundImage: img != null ? MemoryImage(img) : null,
+                    child: img == null ? const Icon(Icons.person) : null,
+                  ),
+                  title: Text('${item['student_name']} 학부모님', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  // MySQL JOIN 결과인 category_title 표시
+                  subtitle: Text('문의 : ${item['category_title'] ?? '제목 없음'}'),
+                );
+              },
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, s) => Center(child: Text('데이터 로드 실패')),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _TeacherChattingState extends ConsumerState<TeacherChatting> {
-
-  late final TextEditingController chattingController;
-  
+class _ChatDetailView extends ConsumerStatefulWidget {
+  const _ChatDetailView();
   @override
-  void initState() {
-    super.initState();
-    chattingController = TextEditingController();
+  ConsumerState<_ChatDetailView> createState() => _ChatDetailViewState();
+}
+
+class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
+  final TextEditingController _textController = TextEditingController();
+
+  void _send() async {
+    final inquiry = ref.read(selectedInquiryProvider);
+    final text = _textController.text.trim();
+    if (inquiry == null || text.isEmpty) return;
+
+    // 1. 전송 누르면 즉시 텍스트 필드 비우기
+    _textController.clear();
+    final col = ref.read(chattingCollectionProvider);
+
+    try {
+      // 2. Firebase 'atti' 인스턴스에 직접 저장
+      await col.add({
+        'category_id': inquiry['category_id'] ?? 1,
+        'chatting_contents': text,
+        'chatting_date': FieldValue.serverTimestamp(), // 서버 시간 고정 저장
+        'guardian_id': inquiry['guardian_id'],
+        'student_id': inquiry['student_id'] ?? 1,
+        'teacher_id': 1,
+        'chatting_image': "", 
+        'chatting_read_date': null,
+      }).then((value) {
+        debugPrint("✅ Firebase 저장 성공: ${value.id}");
+      });
+    } catch (e) {
+      debugPrint("❌ Firebase 저장 에러: $e");
+    }
   }
 
-  @override
-  void dispose() {
-    chattingController.dispose();
-    super.dispose();
-  }
-  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('ATTI'),
-      ),
-      body: Center(
-        child: Row(
-          children: [
-            
-          ],
+    final inquiry = ref.watch(selectedInquiryProvider);
+    final chatData = ref.watch(chatStreamProvider);
+
+    if (inquiry == null) return const Center(child: Text('문의를 선택해주세요.'));
+
+    return Column(
+      children: [
+        AppBar(
+          title: Text('${inquiry['student_name']} 학부모님'),
+          backgroundColor: Colors.white,
+          elevation: 0,
         ),
+        const Divider(height: 1),
+        Expanded(
+          child: chatData.when(
+            data: (msgs) => ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: msgs.length,
+              itemBuilder: (ctx, idx) {
+                final m = msgs[idx];
+                return _buildBubble(m['contents'], m['date'], m['isTeacher']);
+              },
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, s) => Center(child: Text('에러: $e')),
+          ),
+        ),
+        _buildInputBar(),
+      ],
+    );
+  }
+
+  Widget _buildBubble(String contents, DateTime date, bool isMe) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isMe ? const Color(0xFFF7D060) : const Color(0xFFF1F1F1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(contents, style: TextStyle(color: isMe ? Colors.white : Colors.black, fontSize: 16)),
+          ),
+          const SizedBox(width: 8),
+          if (!isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputBar() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                hintText: '메시지를 입력하세요',
+                filled: true,
+                fillColor: const Color(0xFFF8F8F8),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+              ),
+              onSubmitted: (_) => _send(),
+            ),
+          ),
+          IconButton(onPressed: _send, icon: const Icon(Icons.send, color: Color(0xFFF7D060), size: 30)),
+        ],
       ),
     );
   }

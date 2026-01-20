@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:teacher/model/student.dart';
 import 'package:teacher/vm/dusik/student%20_%20provider.dart';
+
+import 'package:http/http.dart' as http;
 
 /* 
 Description : 학생 신규 등록 화면
@@ -45,6 +50,11 @@ class _InsertStudentState extends ConsumerState<InsertStudent> {
   late final TextEditingController addressController;       // 학생 주소
   late final TextEditingController birthdayConttroller;     // 학생 생년월일
 
+  XFile? imageFile;
+  final ImagePicker picker = ImagePicker();
+
+  String filename = ""; // ImagePicker 에서 선택된 filename
+
   @override
   void initState() {
     super.initState();
@@ -78,6 +88,31 @@ class _InsertStudentState extends ConsumerState<InsertStudent> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: ElevatedButton(
+                onPressed: () => getImageFromGallery(ImageSource.gallery), 
+                child: Text('이미지 가져오기')
+                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                height: 200,
+                color: Colors.grey,
+                child: Center(
+                  child: imageFile == null
+                  ? Text("이미지가 선택되지 않았습니다.")
+                  :Image.file(File(imageFile!.path))
+                  ,
+                ),
+              ),
+            ),
+            // ElevatedButton(
+            //   onPressed: () => insertAction(), 
+            //   child: Text("입력")
+            //   ),
             _buildTextField("이름", nameController),
             _buildTextField("전화번호", phoneController),
             _buildTextField("보호자 연락처", guardianPhoneController),
@@ -85,30 +120,30 @@ class _InsertStudentState extends ConsumerState<InsertStudent> {
             _buildTextField("주소", addressController),
             _buildTextField("생년월일", birthdayConttroller),
             const SizedBox(height: 20),
-            // ElevatedButton(
-            //   onPressed: () async {
-            //     final student = Student(
-            //       student_name: nameController.text, 
-            //       student_phone: phoneController.text, 
-            //       student_guardian_phone: guardianPhoneController.text, 
-            //       student_password: passwordController.text, 
-            //       student_address: addressController.text, 
-            //       student_birthday: birthdayConttroller.text, 
-            //       // student_image: student_image.text
-            //       );
-            //     final result = await studentNotifier.insertStudent(student);
-            //     if (result == 'OK') {
-            //       if (!context.mounted)
-            //         return; // await 이후에는 context가 여전히 유효한지 확인
-            //       Navigator.of(context).pop();
-            //       _snackBar(context, '학생 정보가 등록 되었습니다.', Colors.blue);
-            //     } else {
-            //       if (!context.mounted) return;
-            //       _snackBar(context, '오류가 발생했습니다.', Colors.red);
-            //     }
-            //   },
-            //   child: const Text('입력'),
-            // ),
+            ElevatedButton(
+              onPressed: () async {
+                final student = Student(
+                  student_name: nameController.text, 
+                  student_phone: phoneController.text, 
+                  student_guardian_phone: guardianPhoneController.text, 
+                  student_password: passwordController.text, 
+                  student_address: addressController.text, 
+                  student_birthday: birthdayConttroller.text, 
+                  student_image: await imageFile!.readAsBytes()
+                  );
+                final result = await studentNotifier.insertStudent(student);
+                if (result == 'OK') {
+                  if (!context.mounted)
+                    return; // await 이후에는 context가 여전히 유효한지 확인
+                  Navigator.of(context).pop();
+                  _snackBar(context, '학생 정보가 등록 되었습니다.', Colors.blue);
+                } else {
+                  if (!context.mounted) return;
+                  _snackBar(context, '오류가 발생했습니다.', Colors.red);
+                }
+              },
+              child: const Text('입력'),
+            ),
           ],
         ),
       ),
@@ -130,6 +165,44 @@ class _InsertStudentState extends ConsumerState<InsertStudent> {
   }
 
   // --- Functions
+  Future<void> getImageFromGallery(ImageSource imageSource)async{
+    final XFile? pickedFile = await picker.pickImage(source: imageSource);
+    if(pickedFile == null){
+      // errorSnackBar("이미지를 선택해 주세요");
+    }else{
+      imageFile = XFile(pickedFile!.path);
+    }
+    setState(() {});
+  }
+
+  
+
+  // Future<void> insertAction() async{
+  //   var request = http.MultipartRequest(
+  //         'POST', // 메소드 방식
+  //         Uri.parse('http://127.0.0.1:8000/insert')
+  //       );
+  //   request.fields['student_name'] = nameController.text.trim();
+  //   request.fields['student_phone'] = phoneController.text.trim();
+  //   request.fields['student_guardian_phone'] = guardianPhoneController.text.trim();
+  //   request.fields['student_password'] = passwordController.text.trim();
+  //   request.fields['student_address'] = addressController.text.trim();
+  //   request.fields['student_birthday'] = birthdayConttroller.text.trim();
+
+  //   // 위에는 form 형태라서 저렇게고 아래는 이미지 파일 형식이라 다르게 해줄 거
+
+
+  //   if(imageFile != null){
+  //     request.files.add(await http.MultipartFile.fromPath('file', imageFile!.path));
+  //   }
+  //   var res = await request.send();
+  //   if(res.statusCode == 200){
+  //     //
+  //   }else{
+  //     // errorSnackBar("입력중 문제가 발생 하였습니다.");
+  //   }
+  // }
+
   void _snackBar(BuildContext context, String str, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -139,5 +212,7 @@ class _InsertStudentState extends ConsumerState<InsertStudent> {
       ),
     );
   }
+
+  
 } // class
 

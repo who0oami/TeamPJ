@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:student/util/config.dart' as config;
-import 'package:student/vm/weather_provider.dart';
+import 'package:student/vm/restitutor/weather_provider.dart';
 
 //  Forecast Provider
 /*
@@ -24,10 +24,7 @@ final forecastProvider = AsyncNotifierProvider<ForecastProvider, List<String>>(
 class ForecastProvider extends AsyncNotifier<List<String>> {
   @override
   Future<List<String>> build() async{
-    final weatherAsync = ref.watch(weatherProvider);
-    if (weatherAsync.asData?.value == null) {
-      return [];
-    }
+    await ref.watch(weatherProvider.future);
     return fetchForecast();
   }
 

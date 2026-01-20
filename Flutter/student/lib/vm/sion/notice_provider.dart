@@ -1,7 +1,7 @@
 /* 
 Description : Firebase NoticeNotifier
 Date : 2026-1-19
-Author : 정시온
+Author : 황민욱 / 정시온이랑 같이 작업!
 */
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,7 +14,7 @@ import 'package:student/model/notice.dart';
 final noticeCollectionProvider = Provider<CollectionReference>(
   (ref) => FirebaseFirestore.instanceFor(
     app: Firebase.app(), 
-    databaseId: 'atti' //<<<꼭 추가!!
+    databaseId: 'atti' //<<<꼭 추가해야 나옴
   ).collection('notice'),
 );
 

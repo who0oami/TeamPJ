@@ -1,7 +1,7 @@
 /* 
 Description : Firebase HomeworkNotifier
 Date : 2026-1-19
-Author : 황민욱
+Author : 황민욱 / 정시온이랑 같이 작업!
 */
 
 import 'package:cloud_firestore/cloud_firestore.dart';

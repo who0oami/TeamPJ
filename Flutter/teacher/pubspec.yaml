@@ -47,11 +47,14 @@ dependencies:
   # FCM 토큰 저장용 (상대방 토큰 저장)
   cloud_firestore: ^5.0.0
 
+  firebase_storage: ^12.4.10
+
   # Riverpod
   flutter_riverpod: ^3.1.0
 
   # Pluto_grid
   pluto_grid: ^8.1.0
+
 
   # Syncfusion_flutter_datagrid
   syncfusion_flutter_datagrid: ^32.1.23

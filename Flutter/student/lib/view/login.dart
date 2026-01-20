@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:student/util/acolor.dart';
 import 'package:student/util/message.dart';
 
@@ -29,18 +30,27 @@ class _LoginState extends ConsumerState<Login> {
   // Property
   late TextEditingController phoneController; // Phone
   late TextEditingController pwController; // Password
+  final box = GetStorage(); // GetStorage
 
   @override
   void initState() {
     super.initState();
     phoneController = TextEditingController();
     pwController = TextEditingController();
+    initStorage();
   }
+
+  initStorage(){ // key, value
+    box.write('p_userid', '');
+    box.write('p_password', '');
+  }
+
 
   @override
   void dispose() {
     phoneController.dispose();
     pwController.dispose();
+    box.erase();
     super.dispose();
   }
 
@@ -48,53 +58,87 @@ class _LoginState extends ConsumerState<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Acolor.appBarForegroundColor,
       appBar: AppBar(
         title: Text(""),
+      backgroundColor: Acolor.appBarForegroundColor,
       ),
       body: Center(
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Text("로고 이미지")
+              child: Image.asset(
+                "images/head_book.png",
+                width: 150,
+                ),
             ),
-            Text("로그인"),
+            Text("학생 정보 입력"),
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: phoneController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: '전화번호를 입력하세요'
-                      ),
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment:CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "전화번호",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600
+                          ),
+                          ),
+                        TextField(
+                          controller: phoneController,
+                          decoration: InputDecoration(
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blue, width: 2), // 클릭하면 파란색 두껍게
+                            ),
+                            labelText: '전화번호를 입력하세요',
+                            // labelStyle: TextStyle(color: Acolor.successBackColor), _ 컬러가 이상함, 나중에 색상 변경 후 수정 예정
+                            labelStyle: TextStyle(color: Colors.blue),
+                          ),
+                        ),
+                        SizedBox(height: 40,),
+                        Text(
+                          "비밀번호",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600
+                          ),
+                          ),
+                        TextField(
+                          controller: pwController,
+                          decoration: InputDecoration(
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey)
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.blue, width: 2),
+                            ),
+                            labelText: '비밀번호를 입력하세요',
+                            labelStyle: TextStyle(color: Colors.blue),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: pwController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'PW를 입력하세요'
-                      ),
-                    ),
-                  ),
-                SizedBox(height: 20),
+                SizedBox(height: 40),
                 ElevatedButton(
                   onPressed: () => checkLogin(), 
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Acolor.primaryColor,
-                    foregroundColor: Acolor.appBarBackgroundColor, 
-                    fixedSize: Size(150, 20)
+                    foregroundColor: Acolor.onPrimaryColor, 
+                    fixedSize: Size(200, 50)
                     ),
                   child: Text(
-                    '로그인 하기',
+                    '로그인',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18
                     ),
                     ),
                   ),
@@ -125,6 +169,7 @@ class _LoginState extends ConsumerState<Login> {
       '오늘도 즐겁게 공부해보아요',
       Colors.white,
       );
+      saveStorage();
 
     }else{
       // SnackBar 처리
@@ -136,5 +181,9 @@ class _LoginState extends ConsumerState<Login> {
     );
     }
   }
+  }
+  void saveStorage(){
+    box.write('p_userid', phoneController.text.trim());
+    box.write('p_password', pwController.text.trim());
   }
 } // class

@@ -115,6 +115,42 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:106985534946:android:0daa4ccc163f93f98bf5bb",
+        "android_client_info": {
+          "package_name": "com.example.student"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "106985534946-atkl7spsil7anijvamnevffa2u7gfekr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkMyPnSHzULLfU1T4h8UX3DdexH9U0sUk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "106985534946-atkl7spsil7anijvamnevffa2u7gfekr.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "106985534946-b998dun95be9b9ak820e71qo0sf49su8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.a"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:106985534946:android:b83bae59687d51f98bf5bb",
         "android_client_info": {
           "package_name": "com.example.teacher"

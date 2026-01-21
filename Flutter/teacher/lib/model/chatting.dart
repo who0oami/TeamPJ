@@ -19,6 +19,7 @@ class Chatting {
   String? chatting_id;
   int category_id; //  FK
   int teacher_id; //  FK
+  int guardian_id;
   DateTime chatting_date;
   String chatting_content;
 
@@ -27,6 +28,7 @@ class Chatting {
     this.chatting_id,
     required this.category_id,
     required this.teacher_id,
+    required this.guardian_id,
     required this.chatting_date,
     required this.chatting_content,
   });
@@ -37,6 +39,7 @@ class Chatting {
       chatting_id: id,
       category_id: map['category_id'] ?? "",
       teacher_id: map['teacher_id'] ?? "",
+      guardian_id: map['gurdian_id'] ?? "",
       chatting_date: DateTime.parse(map['chatting_date']),
       chatting_content: map['chatting_content'] ?? "",
     );
@@ -53,6 +56,7 @@ class Chatting {
       chatting_id: chatting_id,
       category_id: category_id,
       teacher_id: teacher_id,
+      guardian_id: guardian_id,
       chatting_date: chatting_date ?? this.chatting_date,
       chatting_content: chatting_content ?? this.chatting_content,
     );

@@ -1,17 +1,68 @@
-from fastapi import APIRouter
+# -*- coding: utf-8 -*-
+"""
+author      : 유지현
+Description : SQL의 python Database와 CRUD on Web
+"""
+
+from fastapi import APIRouter, File, Form, UploadFile
 from pydantic import BaseModel
 import config
 import pymysql
 
 router = APIRouter()
 
+class Student(BaseModel):
+    student_name: str = Form(...)
+    student_phone: str = Form(...)
+    student_guardian_phone: str = Form(...)
+    student_password: str = Form(...)
+    student_address: str = Form(...)
+    student_birthday: str = Form(...)
+    student_image: UploadFile = File(...)
+
 def connect():
     conn = pymysql.connect(
         host=config.hostip,
+        port=config.hostPort,
         user=config.hostuser,
         password=config.hostpassword,
         database=config.hostdatabase,
         charset='utf8',
-        cursorclass=pymysql.cursors.DictCursor
     )
     return conn
+
+@router.get("/select")
+async def select():
+    # Connection으로 부터 Cursor 생성
+    conn = connect()
+    curs = conn.cursor()
+
+    # SQL 문장
+    sql = "SELECT * FROM student"
+    curs.execute(sql)
+    rows = curs.fetchall()
+    conn.close()
+    print(rows)
+    # 결과값을 Dictionary로 변환
+    result = [{'student_id' : row[0], 'student_name' : row[1], 'student_phone' : row[2], 'student_guardian_phone' : row[3], 'student_address' : row[4], 'student_birthday' :row[5] } for row in rows]
+    return {'results' : result}
+    # >>>>> student 테이블 , 전체 학생 조회_ 학생 관리용
+
+@router.post("/insert")
+async def insert(student: Student):
+    # Connection으로 부터 Cursor 생성
+    conn = connect()
+    curs = conn.cursor()
+
+    # SQL 문장
+    try:
+        sql = "insert into student( student_name, student_phone, student_guardian_phone, student_password, student_address,student_birthday,student_image) values (%s,%s,%s,%s,%s,%s,%s)"
+        curs.execute(sql, ( student.student_name, student.student_phone, student.student_guardian_phone,student.student_password, student.student_address, student.student_birthday, student.student_image))
+        conn.commit()
+        conn.close()
+        return {'result':'OK'}
+    except Exception as ex:
+        conn.close()
+        print("Error :", ex)
+        return {'result':'Error'}
+        # >>>>> student 테이블 , 학생 추가_ 신규 학생 등록용

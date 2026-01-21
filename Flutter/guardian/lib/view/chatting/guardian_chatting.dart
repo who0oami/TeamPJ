@@ -1,11 +1,22 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:guardian/vm/minjae/guardian_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-final guardianChatCollectionProvider = Provider<CollectionReference>(
-  (ref) => FirebaseFirestore.instance.collection('chatting'),
+const int kDefaultGuardianId = 2;
+const int kDefaultStudentId = 2;
+
+final guardianChatCollectionProvider = Provider<CollectionReference<Map<String, dynamic>>>(
+  (ref) => FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'atti',
+  ).collection('chatting'),
 );
 
 final guardianChatStreamProvider =
@@ -28,8 +39,10 @@ final guardianChatStreamProvider =
 
             final String contents =
                 (d['chatting_contents'] ?? d['chatting_content'] ?? '').toString();
+            final String imageUrl = (d['chatting_image'] ?? '').toString();
             return {
               'contents': contents,
+              'imageUrl': imageUrl,
               'isMe': d['teacher_id'] == null,
               'date': date,
             };
@@ -54,27 +67,55 @@ class GuardianChatting extends ConsumerStatefulWidget {
 
 class _GuardianChattingState extends ConsumerState<GuardianChatting> {
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final ImagePicker _imagePicker = ImagePicker();
+  bool _didInitialScroll = false;
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (!mounted || !_scrollController.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   int? _resolveGuardianId(List<dynamic> guardians) {
     if (widget.guardianId != null) return widget.guardianId;
-    if (guardians.isEmpty) return null;
+    if (guardians.isEmpty) return kDefaultGuardianId;
     final g = guardians.first;
     return g.guardian_id;
   }
 
   int? _resolveStudentId(List<dynamic> guardians) {
     if (widget.studentId != null) return widget.studentId;
-    if (guardians.isEmpty) return null;
+    if (guardians.isEmpty) return kDefaultStudentId;
     final g = guardians.first;
     return g.student_id;
   }
 
-  Future<void> _send(int guardianId, int studentId) async {
-    final text = _textController.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _sendMessage(
+    int guardianId,
+    int studentId, {
+    String? text,
+    String? imageUrl,
+  }) async {
+    final String safeText = (text ?? '').trim();
+    final String safeImageUrl = (imageUrl ?? '').trim();
+    if (safeText.isEmpty && safeImageUrl.isEmpty) return;
 
     debugPrint(
-      '📨 send called: guardianId=$guardianId studentId=$studentId text="$text"',
+      '📨 send called: guardianId=$guardianId studentId=$studentId text="$safeText"',
     );
 
     _textController.clear();
@@ -87,17 +128,18 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
       final doc = await col
           .add({
         'category_id': widget.categoryId,
-        'chatting_contents': text,
-        'chatting_content': text,
+        'chatting_contents': safeText,
+        'chatting_content': safeText,
         'chatting_date': FieldValue.serverTimestamp(),
         'guardian_id': guardianId,
         'student_id': studentId,
         'teacher_id': null,
-        'chatting_image': "",
+        'chatting_image': safeImageUrl,
         'chatting_read_date': null,
       })
           .timeout(const Duration(seconds: 10));
       debugPrint("✅ Firebase 저장 성공: ${doc.id}");
+      _scrollToBottom();
     } catch (e) {
       debugPrint("❌ Firebase 저장 에러: $e");
       if (mounted) {
@@ -107,6 +149,38 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
       }
     } finally {
       debugPrint('✅ 전송 처리 완료');
+    }
+  }
+
+  Future<void> _sendText(int guardianId, int studentId) async {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+    await _sendMessage(guardianId, studentId, text: text);
+  }
+
+  Future<void> _pickAndSendImage(int guardianId, int studentId) async {
+    final XFile? picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    try {
+      final file = File(picked.path);
+      final storage = FirebaseStorage.instanceFor(app: Firebase.app());
+      final String fileName =
+          '${guardianId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = storage.ref().child('chatting_images').child(fileName);
+      await ref.putFile(file);
+      final url = await ref.getDownloadURL();
+      await _sendMessage(guardianId, studentId, imageUrl: url);
+    } catch (e) {
+      debugPrint("❌ 이미지 전송 에러: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미지 전송 실패: $e')),
+        );
+      }
     }
   }
 
@@ -142,14 +216,26 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
                   const Divider(height: 1),
                   Expanded(
                     child: chatData.when(
-                      data: (msgs) => ListView.builder(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: msgs.length,
-                        itemBuilder: (ctx, idx) {
-                          final m = msgs[idx];
-                          return _buildBubble(m['contents'], m['date'], m['isMe']);
-                        },
-                      ),
+                      data: (msgs) {
+                        if (!_didInitialScroll && msgs.isNotEmpty) {
+                          _didInitialScroll = true;
+                          _scrollToBottom();
+                        }
+                        return ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(20),
+                          itemCount: msgs.length,
+                          itemBuilder: (ctx, idx) {
+                            final m = msgs[idx];
+                            return _buildBubble(
+                              m['contents'],
+                              m['imageUrl'],
+                              m['date'],
+                              m['isMe'],
+                            );
+                          },
+                        );
+                      },
                       loading: () => const Center(child: CircularProgressIndicator()),
                       error: (e, s) => Center(child: Text('에러: $e')),
                     ),
@@ -267,7 +353,13 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     );
   }
 
-  Widget _buildBubble(String contents, DateTime date, bool isMe) {
+  Widget _buildBubble(
+    String contents,
+    String? imageUrl,
+    DateTime date,
+    bool isMe,
+  ) {
+    final String? url = (imageUrl ?? '').trim().isEmpty ? null : imageUrl;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -286,9 +378,35 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
               color: isMe ? const Color(0xFFF7D060) : const Color(0xFFF1F1F1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              contents,
-              style: TextStyle(color: isMe ? Colors.white : Colors.black, fontSize: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                if (url != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      url,
+                      width: 180,
+                      height: 180,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) {
+                        return const Icon(Icons.broken_image, size: 40);
+                      },
+                    ),
+                  ),
+                if (contents.trim().isNotEmpty) ...[
+                  if (url != null) const SizedBox(height: 8),
+                  Text(
+                    contents,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: 8),
@@ -307,6 +425,10 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
+          IconButton(
+            onPressed: () => _pickAndSendImage(guardianId, studentId),
+            icon: const Icon(Icons.add, color: Color(0xFFF7D060), size: 30),
+          ),
           Expanded(
             child: TextField(
               controller: _textController,
@@ -319,11 +441,11 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
                   borderSide: BorderSide.none,
                 ),
               ),
-              onSubmitted: (_) => _send(guardianId, studentId),
+              onSubmitted: (_) => _sendText(guardianId, studentId),
             ),
           ),
           IconButton(
-            onPressed: () => _send(guardianId, studentId),
+            onPressed: () => _sendText(guardianId, studentId),
             icon: const Icon(Icons.send, color: Color(0xFFF7D060), size: 30),
           ),
         ],

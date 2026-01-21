@@ -304,10 +304,14 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
       final String fileName =
           '${inquiry['guardian_id']}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = storage.ref().child('chatting_images').child(fileName);
-      await ref.putFile(file);
-      final url = await ref.getDownloadURL();
-      await _retrySend(col: ref.read(chattingCollectionProvider), inquiry: inquiry, imageUrl: url);
+      final storageRef = storage.ref().child('chatting_images').child(fileName);
+      await storageRef.putFile(file);
+      final url = await storageRef.getDownloadURL();
+      await _retrySend(
+        col: ref.read(chattingCollectionProvider),
+        inquiry: inquiry,
+        imageUrl: url,
+      );
       _scrollToBottom();
       _showSnack('이미지 전송 완료');
     } catch (e) {

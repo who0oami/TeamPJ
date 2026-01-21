@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teacher/app_keys.dart';
 import 'package:teacher/firebase_options.dart';
 import 'package:teacher/view/chatting/teacher_chatting.dart';
 
@@ -13,6 +15,14 @@ void main() async{
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+    final db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(),
+      databaseId: 'atti',
+    );
+    // [Codex] Ensure Firestore network is enabled at startup.
+    await db.enableNetwork();
+    // [Codex] Avoid cached reads masking network issues during debugging.
+    db.settings = const Settings(persistenceEnabled: false);
   } catch (e) {
     // 💡 만약 여기서 [core/duplicate-app] 에러가 난다면, 
     // 이미 초기화된 것이므로 에러를 무시하고 진행합니다.
@@ -31,6 +41,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+      scaffoldMessengerKey: scaffoldMessengerKey,
       theme: ThemeData(
       
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),

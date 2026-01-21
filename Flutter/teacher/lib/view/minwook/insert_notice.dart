@@ -135,8 +135,8 @@ class _InsertNoticeState extends ConsumerState<InsertNotice> {
               
                   final notice = Notice(
                     teacher_id: teacherId,
-                    notice_title: titleController.text.trim(),
-                    notice_content: contentController.text.trim(),
+                    notice_title: titleController.text,
+                    notice_content: contentController.text,
                     notice_insertdate: DateTime.now(),
                     notice_images: urls,
                   );

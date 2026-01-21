@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:student/util/acolor.dart';
 import 'package:student/util/message.dart';
+import 'package:student/vm/dusik/student%20_%20provider.dart';
 
 /* 
 Description : 학생 로그인 페이지
@@ -57,6 +58,7 @@ class _LoginState extends ConsumerState<Login> {
 
   @override
   Widget build(BuildContext context) {
+    final studentAsync = ref.watch(studentNotifierProvider);
     return Scaffold(
       backgroundColor: Acolor.appBarForegroundColor,
       appBar: AppBar(
@@ -151,36 +153,42 @@ class _LoginState extends ConsumerState<Login> {
     );
   } // build
   // ---- Functions ----
-   checkLogin(){
-    if(phoneController.text.trim().isEmpty || pwController.text.trim().isEmpty){ // 둘 다 비어있는 경우
-      // SnackBar 처리
+void checkLogin() async {
+    final phone = phoneController.text.trim();
+    final pw = pwController.text.trim();
+    final studentNotifier = ref.read(studentNotifierProvider.notifier);
+    if (phone.isEmpty || pw.isEmpty) {
       Message.snackBar(
-      context,
-      '전화번호와 비밀번호를 입력하세요',
-      2,
-      Colors.red,
-    );
-    }else{
-      if(phoneController.text.trim() == 'root' && pwController.text.trim() == '1234'){// 조건이 다르니까 else로 써줘야 함
-      // 정상적인 경우 Alert 출력
+        context,
+        '전화번호와 비밀번호를 입력하세요',
+        2,
+        Colors.red,
+      );
+      return;
+    }
+    //서버로 로그인 요청 (위의 if문에 걸리지 않았을 때
+    final result = await studentNotifier.loginStudent(phone, pw);
+
+    // 3. 결과값에 따른 처리
+    if (result == 'OK') {
+      // 성공 시 다이얼로그
       Message.dialog(
-      context,
-      '환영합니다!',
-      '오늘도 즐겁게 공부해보아요',
-      Colors.white,
+        context,
+        '환영합니다!',
+        '오늘도 즐겁게 공부해보아요',
+        Colors.white,
       );
       saveStorage();
-
-    }else{
-      // SnackBar 처리
-       Message.snackBar(
-      context,
-      '전화번호와 비밀번호를 확인해주세요',
-      2,
-      Colors.red,
-    );
+      // 페이지 이동
+    } else {
+      // 실패 시 스낵바
+      Message.snackBar(
+        context,
+        '전화번호와 비밀번호를 확인해주세요',
+        2,
+        Colors.red,
+      );
     }
-  }
   }
   void saveStorage(){
     box.write('p_userid', phoneController.text.trim());

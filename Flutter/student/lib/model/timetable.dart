@@ -32,4 +32,5 @@ class Timetable {
       timetable_grade: map['timetable_grade'] ?? 0,
     );
   }
+
 }

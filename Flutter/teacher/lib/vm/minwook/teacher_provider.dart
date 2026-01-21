@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:teacher/model/teacher.dart';
 
-final String baseUrl = "http://10.238.248.32:8000";
+final String baseUrl = "http://10.238.248.183:8000";
 
 // teacher_id로 교사 1명 조회
 final teacherByIdProvider = FutureProvider.family<Teacher?, int>((ref, teacherId) async {

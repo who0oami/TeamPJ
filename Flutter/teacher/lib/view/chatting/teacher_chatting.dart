@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,9 +7,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:io' show Platform;
 import 'package:intl/intl.dart';
+import 'package:teacher/app_keys.dart';
 
 // --- [Providers] ---
 
@@ -61,8 +65,11 @@ final categoryProvider = FutureProvider<Map<int, String>>((ref) async {
 });
 
 // 2. 'atti' 데이터베이스 인스턴스 전용 컬렉션 참조
-final chattingCollectionProvider = Provider<CollectionReference>(
-  (ref) => FirebaseFirestore.instance.collection('chatting'),
+final chattingCollectionProvider = Provider<CollectionReference<Map<String, dynamic>>>(
+  (ref) => FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'atti',
+  ).collection('chatting'),
 );
 
 // 2-1. guardian_id 기준 최신 채팅의 category_id 로더 (Firebase)
@@ -212,33 +219,97 @@ class _ChatDetailView extends ConsumerStatefulWidget {
 
 class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
   final TextEditingController _textController = TextEditingController();
+  static const int _maxSendAttempts = 3;
+
+  void _showSnack(String message) {
+    // [Codex] Use global messenger to avoid missing context issues.
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger != null) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   void _send() async {
     final inquiry = ref.read(selectedInquiryProvider);
     final text = _textController.text.trim();
-    if (inquiry == null || text.isEmpty) return;
+    if (inquiry == null) {
+      debugPrint("⚠️ 전송 실패: 문의 대상이 선택되지 않았습니다.");
+      _showSnack('전송 실패: 문의 대상을 선택해주세요.');
+      return;
+    }
+    if (text.isEmpty) {
+      debugPrint("⚠️ 전송 실패: 메시지가 비어 있습니다.");
+      _showSnack('전송 실패: 메시지를 입력해주세요.');
+      return;
+    }
 
     // 1. 전송 누르면 즉시 텍스트 필드 비우기
     _textController.clear();
     final col = ref.read(chattingCollectionProvider);
 
     try {
-      // 2. Firebase 'atti' 인스턴스에 직접 저장
-      await col.add({
-        'category_id': inquiry['category_id'] ?? 1,
-        'chatting_contents': text,
-        'chatting_content': text,
-        'chatting_date': FieldValue.serverTimestamp(), // 서버 시간 고정 저장
-        'guardian_id': int.tryParse(inquiry['guardian_id'].toString()) ?? inquiry['guardian_id'],
-        'student_id': inquiry['student_id'] ?? 1,
-        'teacher_id': 1,
-        'chatting_image': "", 
-        'chatting_read_date': null,
-      }).then((value) {
-        debugPrint("✅ Firebase 저장 성공: ${value.id}");
-      });
+      debugPrint("➡️ 전송 시도: guardian_id=${inquiry['guardian_id']}, student_id=${inquiry['student_id']}");
+      _showSnack('전송 중...');
+      await _retrySend(col, inquiry, text);
     } catch (e) {
       debugPrint("❌ Firebase 저장 에러: $e");
+      _showSnack('전송 실패: $e');
+    }
+  }
+
+  Future<void> _retrySend(
+    CollectionReference col,
+    Map<String, dynamic> inquiry,
+    String text,
+  ) async {
+    for (int attempt = 1; attempt <= _maxSendAttempts; attempt++) {
+      try {
+        // [Codex] Quick connectivity check before write.
+        await col.limit(1).get(const GetOptions(source: Source.server)).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint("❌ Firebase 읽기 타임아웃(5초)");
+            throw TimeoutException("Firebase read timed out");
+          },
+        );
+        debugPrint("✅ Firebase 읽기 성공");
+        // 2. Firebase 'atti' 인스턴스에 직접 저장
+        final value = await col.add({
+          'category_id': inquiry['category_id'] ?? 1,
+          'chatting_contents': text,
+          'chatting_content': text,
+          'chatting_date': FieldValue.serverTimestamp(), // 서버 시간 고정 저장
+          'guardian_id': int.tryParse(inquiry['guardian_id'].toString()) ??
+              inquiry['guardian_id'],
+          'student_id': inquiry['student_id'] ?? 1,
+          'teacher_id': 1,
+          'chatting_image': "",
+          'chatting_read_date': null,
+        }).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint("❌ Firebase 저장 타임아웃(5초)");
+            throw TimeoutException("Firebase write timed out");
+          },
+        );
+        debugPrint("✅ Firebase 저장 성공: ${value.id}");
+        _showSnack('전송 성공');
+        return;
+      } on FirebaseException catch (e) {
+        final bool shouldRetry =
+            e.code == 'unavailable' || e.code == 'deadline-exceeded';
+        if (!shouldRetry || attempt == _maxSendAttempts) rethrow;
+        final delay = Duration(seconds: 1 << (attempt - 1));
+        debugPrint("⏳ 재시도 대기 ${delay.inSeconds}s (attempt $attempt)");
+        await Future.delayed(delay);
+      } on TimeoutException {
+        if (attempt == _maxSendAttempts) rethrow;
+        final delay = Duration(seconds: 1 << (attempt - 1));
+        debugPrint("⏳ 타임아웃 재시도 대기 ${delay.inSeconds}s (attempt $attempt)");
+        await Future.delayed(delay);
+      }
     }
   }
 

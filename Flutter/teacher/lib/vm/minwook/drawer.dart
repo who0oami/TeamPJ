@@ -31,7 +31,7 @@ class AppDrawer extends StatelessWidget {
       child: SafeArea(
         child: ListView(
           children: [
-            DrawerHeader(child: Text('메뉴')),
+            DrawerHeader(child: Center(child: Image.asset('images/atti_logo.png'))),
             _buildDrawerListTile('공지', context, ViewNotice()),
             _buildDrawerListTile('숙제', context, ViewHomework()),
             _buildDrawerListTile('시간표', context, InsertTimetable()),

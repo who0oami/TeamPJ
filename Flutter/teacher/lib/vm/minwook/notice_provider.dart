@@ -70,17 +70,22 @@ class NoticeActionProvider extends Notifier<void>{
   }) async {
     final urls = <String>[];
 
-    for (final f in files) {
-      final fileName = "notice_${DateTime.now().millisecondsSinceEpoch}";
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('notice_images')
-          .child('$fileName.jpg');
+    final app = Firebase.app();
+    final storage = FirebaseStorage.instanceFor(app: app);
 
-      await ref.putFile(f);
-      final url = await ref.getDownloadURL();
-      urls.add(url);
+    for (final f in files) {
+      final fileName = "notice_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final ref = storage
+          .ref()
+          .child('images')
+          .child('teacher_$teacherId')
+          .child(fileName);
+
+        await ref.putFile(f);
+        final url = await ref.getDownloadURL();
+        urls.add(url);
     }
+
     return urls;
   }
 
@@ -88,13 +93,40 @@ class NoticeActionProvider extends Notifier<void>{
     await _notices.add(notice.toMap());
   }
 
-  Future<void> updateNotice() async{
-    await _notices.doc().update({});
+  Future<void> deleteStorageFilesByUrls(List<String> urls) async {
+    if (urls.isEmpty) return;
+
+    final app = Firebase.app();
+    final storage = FirebaseStorage.instanceFor(app: app);
+
+    for (final url in urls) {
+      final ref = storage.refFromURL(url);
+      await ref.delete();
+    }
   }
 
-  Future<void> deleteNotice() async{
-    await _notices.doc().delete();
+  Future<void> updateNotice({required String id, required Map<String, dynamic> data}) async{
+    await _notices.doc(id).update(data);
   }
+
+  Future<void> deleteNotice({required String id}) async {
+    final snap = await _notices.doc(id).get();
+
+    if (!snap.exists) return;
+
+    final data = snap.data() as Map<String, dynamic>;
+
+    final List<String> urls = (data['notice_images'] == null)
+        ? <String>[]
+        : List<String>.from(data['notice_images']);
+
+    if (urls.isNotEmpty) {
+      await deleteStorageFilesByUrls(urls);
+    }
+
+    await _notices.doc(id).delete();
+  }
+
 } // NoticeActionProvider
 
 final noticeActionProvider = NotifierProvider<NoticeActionProvider, void>(

@@ -1,8 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:student/view/calendar.dart';
-import 'package:student/view/main_page.dart';
+import 'package:student/firebase_options.dart';
+import 'package:student/view/notice/notice_tabbar.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,6 +11,9 @@ void main() async{
 
   await initializeDateFormatting('ko_KR', null);
   debugPrint('STEP 2');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(
     ProviderScope(child: const MyApp())
@@ -27,7 +31,7 @@ class MyApp extends StatelessWidget {
       
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: MainPage(),
+      home: NoticeTabbar(),
     );
   }
 }

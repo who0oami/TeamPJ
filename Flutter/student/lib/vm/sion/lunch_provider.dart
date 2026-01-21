@@ -1,12 +1,9 @@
-<<<<<<< HEAD
-=======
 /* 
 Description : Firebase HomeworkNotifier
 Date : 2026-1-21
 Author : 황민욱 / 정시온이랑 같이 작업!
 */
 
->>>>>>> c7bd2f377d1a5fab919d41e3c55623383ef2f08e
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';

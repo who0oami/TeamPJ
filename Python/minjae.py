@@ -120,8 +120,6 @@ async def select_guardian(guardian_id: int):
 
     return {'results': result}
 
-<<<<<<< HEAD
-=======
 
 @router.get("/student/{student_id}")
 async def get_student(student_id: int):
@@ -137,4 +135,3 @@ async def get_student(student_id: int):
             result['student_image'] = base64.b64encode(result['student_image']).decode('utf-8')
         return result
     return {"error": "Student not found"}
->>>>>>> c7bd2f377d1a5fab919d41e3c55623383ef2f08e

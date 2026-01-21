@@ -9,8 +9,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:teacher/app_keys.dart';
 
 // --- [Providers] ---
@@ -32,18 +34,6 @@ final chatTargetProvider = FutureProvider<List<dynamic>>((ref) async {
     } else {
       throw Exception('서버 응답 오류: ${response.statusCode}');
     }
-    final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
-    final Map<int, String> map = {};
-    for (final item in data) {
-      final id = item['category_id'];
-      final title = item['category_title'];
-      if (id is int && title is String) {
-        map[id] = title;
-      } else if (id != null && title != null) {
-        map[int.parse(id.toString())] = title.toString();
-      }
-    }
-    return map;
   } catch (e) {
     throw Exception('MySQL 서버 연결 확인 필요: $e');
   }
@@ -125,8 +115,10 @@ final chatStreamProvider = StreamProvider.autoDispose((ref) {
 
             final String contents =
                 (d['chatting_contents'] ?? d['chatting_content'] ?? '').toString();
+            final String imageUrl = (d['chatting_image'] ?? '').toString();
             return {
               'contents': contents,
+              'imageUrl': imageUrl,
               'isTeacher': d['teacher_id'] != null,
               'date': date,
             };
@@ -231,7 +223,28 @@ class _ChatDetailView extends ConsumerStatefulWidget {
 
 class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final ImagePicker _imagePicker = ImagePicker();
   static const int _maxSendAttempts = 3;
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (!mounted || !_scrollController.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   void _showSnack(String message) {
     // [Codex] Use global messenger to avoid missing context issues.
@@ -264,18 +277,55 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     try {
       debugPrint("➡️ 전송 시도: guardian_id=${inquiry['guardian_id']}, student_id=${inquiry['student_id']}");
       _showSnack('전송 중...');
-      await _retrySend(col, inquiry, text);
+      await _retrySend(col: col, inquiry: inquiry, text: text);
+      _scrollToBottom();
     } catch (e) {
       debugPrint("❌ Firebase 저장 에러: $e");
       _showSnack('전송 실패: $e');
     }
   }
 
+  Future<void> _pickAndSendImage() async {
+    final inquiry = ref.read(selectedInquiryProvider);
+    if (inquiry == null) {
+      _showSnack('전송 실패: 문의 대상을 선택해주세요.');
+      return;
+    }
+
+    final XFile? picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    try {
+      _showSnack('이미지 업로드 중...');
+      final file = File(picked.path);
+      final storage = FirebaseStorage.instanceFor(app: Firebase.app());
+      final String fileName =
+          '${inquiry['guardian_id']}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = storage.ref().child('chatting_images').child(fileName);
+      await ref.putFile(file);
+      final url = await ref.getDownloadURL();
+      await _retrySend(col: ref.read(chattingCollectionProvider), inquiry: inquiry, imageUrl: url);
+      _scrollToBottom();
+      _showSnack('이미지 전송 완료');
+    } catch (e) {
+      debugPrint('❌ 이미지 업로드/전송 실패: $e');
+      _showSnack('이미지 전송 실패: $e');
+    }
+  }
+
   Future<void> _retrySend(
-    CollectionReference col,
-    Map<String, dynamic> inquiry,
-    String text,
+    {
+    required CollectionReference col,
+    required Map<String, dynamic> inquiry,
+    String? text,
+    String? imageUrl,
+  }
   ) async {
+    final String safeText = (text ?? '').trim();
+    final String safeImageUrl = (imageUrl ?? '').trim();
     for (int attempt = 1; attempt <= _maxSendAttempts; attempt++) {
       try {
         // [Codex] Quick connectivity check before write.
@@ -290,14 +340,14 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
         // 2. Firebase 'atti' 인스턴스에 직접 저장
         final value = await col.add({
           'category_id': inquiry['category_id'] ?? 1,
-          'chatting_contents': text,
-          'chatting_content': text,
+          'chatting_contents': safeText,
+          'chatting_content': safeText,
           'chatting_date': FieldValue.serverTimestamp(), // 서버 시간 고정 저장
           'guardian_id': int.tryParse(inquiry['guardian_id'].toString()) ??
               inquiry['guardian_id'],
           'student_id': inquiry['student_id'] ?? 1,
           'teacher_id': 1,
-          'chatting_image': "",
+          'chatting_image': safeImageUrl,
           'chatting_read_date': null,
         }).timeout(
           const Duration(seconds: 5),
@@ -343,11 +393,17 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
         Expanded(
           child: chatData.when(
             data: (msgs) => ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(20),
               itemCount: msgs.length,
               itemBuilder: (ctx, idx) {
                 final m = msgs[idx];
-                return _buildBubble(m['contents'], m['date'], m['isTeacher']);
+                return _buildBubble(
+                  m['contents'],
+                  m['imageUrl'],
+                  m['date'],
+                  m['isTeacher'],
+                );
               },
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -359,7 +415,13 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     );
   }
 
-  Widget _buildBubble(String contents, DateTime date, bool isMe) {
+  Widget _buildBubble(
+    String contents,
+    String? imageUrl,
+    DateTime date,
+    bool isMe,
+  ) {
+    final String? url = (imageUrl ?? '').trim().isEmpty ? null : imageUrl;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -374,7 +436,36 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
               color: isMe ? const Color(0xFFF7D060) : const Color(0xFFF1F1F1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(contents, style: TextStyle(color: isMe ? Colors.white : Colors.black, fontSize: 16)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                if (url != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      url,
+                      width: 180,
+                      height: 180,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) {
+                        return const Icon(Icons.broken_image, size: 40);
+                      },
+                    ),
+                  ),
+                if (contents.trim().isNotEmpty) ...[
+                  if (url != null) const SizedBox(height: 8),
+                  Text(
+                    contents,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : Colors.black,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(width: 8),
           if (isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
@@ -388,6 +479,10 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
+          IconButton(
+            onPressed: _pickAndSendImage,
+            icon: const Icon(Icons.add, color: Color(0xFFF7D060), size: 30),
+          ),
           Expanded(
             child: TextField(
               controller: _textController,

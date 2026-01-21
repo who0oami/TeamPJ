@@ -17,7 +17,7 @@ class WeatherProvider extends AsyncNotifier<String> {
 
   Future<String> fetchCurrentWeather() async {
     final uri = Uri.parse(
-      'http://${config.getForwardIP()}:${config.forwardport}/weather/currentweather',
+      'http://${config.getForwardIP()}:${config.forwardport}/restitutor/currentweather',
     );
     final res = await http.get(uri);
 

@@ -5,12 +5,13 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:guardian/model/guardian.dart';
 import 'package:http/http.dart' as http;
 class GuardianNotifier extends AsyncNotifier<List<Guardian>>{
-  final String baseUrl = "http://10.0.2.2:8000";
+  final String baseUrl = _resolveBaseUrl();
 
   
   @override
@@ -37,3 +38,14 @@ class GuardianNotifier extends AsyncNotifier<List<Guardian>>{
 final guardianNotifierProvider =AsyncNotifierProvider(
   ()=> GuardianNotifier(),
 );
+
+String _resolveBaseUrl() {
+  const String apiHost = String.fromEnvironment('API_HOST', defaultValue: '');
+  if (apiHost.isNotEmpty) {
+    return 'http://$apiHost:8000';
+  }
+  if (Platform.isAndroid) {
+    return 'http://10.0.2.2:8000';
+  }
+  return 'http://127.0.0.1:8000';
+}

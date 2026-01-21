@@ -13,6 +13,7 @@ import config
 #     DUMMY 00/00/0000 00:00, 'Point X, Description', Creator: Chansol, Park
 #           18/01/2026 12:27, 'Point 1, Transfer .py into restitutor.dart', Creator: Chansol, Park
 #           18/01/2026 14:03, 'Point 2, Forecast added', Creator: Chansol, Park
+#           20/01/2026 11:18, 'Point 2, Attend checker added', Creator: Chansol, Park
 #   Version: 1.0
 #   Dependency: (FastAPI, HTTPException, requests) from fastapi, datetime
 
@@ -37,6 +38,7 @@ weather_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_
 forecast_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getUltraSrtFcst"
 AUTH_KEY = "Hj5f4F14Rtq-X-BdeKbaHw"
 
+# Get weather now
 @router.get("/currentweather")
 def get_current(
 ):
@@ -53,8 +55,8 @@ def get_current(
         "authKey": AUTH_KEY,
         "base_date": base_date, # Current date
         "base_time": base_time, # Current Time
-        "nx": 55, # Position x
-        "ny": 127, # Position y
+        "nx": 61, # Position x
+        "ny": 126, # Position y
         "dataType": "JSON",
         "numOfRows": 1000,
         "pageNo": 1,
@@ -76,6 +78,7 @@ def get_current(
 
     return result
 
+# Get forecast
 @router.get("/forecast")
 def get_forecast(
 ):
@@ -98,8 +101,8 @@ def get_forecast(
         "authKey": AUTH_KEY,
         "base_date": base_date, # Current date
         "base_time": base_time, # Current Time
-        "nx": 55, # Position x
-        "ny": 127, # Position y
+        "nx": 61, # Position x
+        "ny": 126, # Position y
         "dataType": "JSON",
         "numOfRows": 1000,
         "pageNo": 1,
@@ -124,3 +127,71 @@ def get_forecast(
         raise HTTPException(status_code=404, detail="Forecast Error")
 
     return result
+
+# Create attandance if not exists
+@router.post("/attend/init")
+def attend_init(student_id: int):
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    conn = connect()
+    try:
+        curs = conn.cursor()
+
+        sql = """
+        INSERT INTO attendance (student_id, attendance_start_time)
+        SELECT %s, %s
+        WHERE NOT EXISTS (
+            SELECT 1 FROM attendance
+            WHERE student_id=%s AND attendance_start_time=%s
+        )
+        """
+        curs.execute(sql, (student_id, today, student_id, today))
+        conn.commit()
+
+        return {"created": curs.rowcount == 1}
+    finally:
+        conn.close()
+
+@router.get("/attend/status")
+def attend_status(student_id: int):
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    conn = connect()
+    try:
+        curs = conn.cursor()
+
+        sql = """
+        SELECT attendance_status
+        FROM attendance
+        WHERE student_id=%s AND attendance_start_time=%s
+        LIMIT 1
+        """
+        curs.execute(sql, (student_id, today))
+        row = curs.fetchone()
+
+        if row is None:
+            return {"checked": False, "exists": False}
+
+        return {"checked": row["attendance_status"] is not None, "exists": True}
+    finally:
+        conn.close()
+
+@router.post("/attend/check")
+def attend_check(student_id: int):
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    conn = connect()
+    try:
+        curs = conn.cursor()
+
+        sql = """
+        UPDATE attendance
+        SET attendance_status='출석'
+        WHERE student_id=%s AND attendance_start_time=%s
+        """
+        curs.execute(sql, (student_id, today))
+        conn.commit()
+
+        return {"updated": curs.rowcount == 1}
+    finally:
+        conn.close()

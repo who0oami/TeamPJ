@@ -1,30 +1,109 @@
-from fastapi import APIRouter
+# teacher_api.py
+import base64
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 import config
 import pymysql
 
 router = APIRouter()
 
-
 def connect():
-    conn = pymysql.connect(
+    return pymysql.connect(
         host=config.hostip,
         port=config.hostPort,
         user=config.hostuser,
         password=config.hostpassword,
         database=config.hostdatabase,
-        charset='utf8',
+        charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
     )
-    return conn
 
+# 1. 단일 선생님 조회 (Flutter용)
+@router.get("/select/teacher")
+async def select_teacher(teacher_id: int):
+    conn = connect()
+    curs = conn.cursor()
+
+    sql = """
+    SELECT
+        teacher_id,
+        teacher_name,
+        teacher_email,
+        teacher_phone,
+        teacher_password,
+        teacher_when,
+        teacher_subject
+    FROM teacher
+    WHERE teacher_id = %s
+    """
+
+    curs.execute(sql, (teacher_id,))
+    row = curs.fetchone()
+    conn.close()
+
+    if row is None:
+        return {"results": []}
+    return {"results": [row]}
+
+# 2. 선생님 이미지 반환
+@router.get("/view/{teacher_id}")
+async def view_teacher_image(teacher_id: int):
+    try:
+        conn = connect()
+        curs = conn.cursor()
+
+        sql = "SELECT teacher_image FROM teacher WHERE teacher_id=%s"
+        curs.execute(sql, (teacher_id,))
+        row = curs.fetchone()
+        conn.close()
+
+        if row is None or row['teacher_image'] is None:
+            return {"result": "No image found"}
+
+        image_data = row['teacher_image']
+
+        return Response(
+            content=image_data,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate"
+            }
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"result": f"Error: {str(e)}"}
+
+# 3. 전체 teacher 조회 API (관리용 등)
+@router.get("/select/all-teachers")
+async def select_all_teachers():
+    conn = connect()
+    curs = conn.cursor()
+    sql = """
+    SELECT
+        teacher_id,
+        teacher_name,
+        teacher_email,
+        teacher_phone,
+        teacher_password,
+        teacher_when,
+        teacher_subject
+    FROM teacher
+    """
+    curs.execute(sql)
+    rows = curs.fetchall()
+    conn.close()
+    return {"results": rows}
+
+# 4. 보호자 정보 조회 API
 @router.get("/select")
-async def select(guardian_id: int):
+async def select_guardian(guardian_id: int):
     conn = connect()
     curs = conn.cursor()
 
     sql = "SELECT * FROM guardian WHERE guardian_id=%s"
-    curs.execute(sql,(guardian_id))
+    curs.execute(sql, (guardian_id,))
     rows = curs.fetchall()
     conn.close()
 
@@ -42,3 +121,17 @@ async def select(guardian_id: int):
     return {'results': result}
 
 
+@router.get("/student/{student_id}")
+async def get_student(student_id: int):
+    db = connect()
+    cursor = db.cursor()
+    sql = "SELECT * FROM student WHERE student_id = %s"
+    cursor.execute(sql, (student_id,))
+    result = cursor.fetchone()
+    db.close()
+    
+    if result:
+        if result.get('student_image'):
+            result['student_image'] = base64.b64encode(result['student_image']).decode('utf-8')
+        return result
+    return {"error": "Student not found"}

@@ -36,7 +36,7 @@ def connect():
     conn = pymysql.connect(
         host=config.hostip,
         # Point 1
-        port=config.hostPort,
+        port=config.hostport,
         user=config.hostuser,
         password=config.hostpassword,
         database=config.hostdatabase,

@@ -10,16 +10,14 @@ class Lunch{
   final String lunch_id;
   final String lunch_category_id;
   final DateTime lunch_date;
-  final String lunch_menu;
-  final String lunch_image;
+  final String lunch_menu_id;
 
   Lunch(
     {
       required this.lunch_id,
       required this.lunch_category_id,
       required this.lunch_date,
-      required this.lunch_menu,
-      required this.lunch_image,
+      required this.lunch_menu_id,
     }
 
   );
@@ -28,8 +26,8 @@ class Lunch{
       lunch_id: id,
       lunch_category_id: map['lunch_category_id'] ?? "",
       lunch_date: (map['lunch_date']as Timestamp).toDate(),
-      lunch_menu: map['lunch_menu'] ?? "",
-      lunch_image: map['lunch_image'] ?? "");
+      lunch_menu_id: map['lunch_menu_id'] ?? ""
+    );
   }
 
 }

@@ -15,7 +15,7 @@ String teacher_phone;
 String teacher_password;
 String teacher_when;
 String teacher_subject;
-Uint8List teacher_image;
+Uint8List? teacher_image;
 
 
 
@@ -27,7 +27,7 @@ Teacher({
   required this.teacher_password,
   required this.teacher_when,
   required this.teacher_subject,
-  required this.teacher_image
+  this.teacher_image
 });
 
 factory Teacher.fromJson(Map<String,dynamic>json){

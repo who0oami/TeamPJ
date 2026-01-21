@@ -43,16 +43,22 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
     return data['result'];
   }
 
-  Future<String> updateStudent(Student s) async {
-    final url = Uri.parse('$baseUrl/update');
+  Future<String> loginStudent(String phone, String password) async {
+    final url = Uri.parse("$baseUrl/student_login");
     final response = await http.post(
       url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(s.toJson()),
-      );
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'student_phone': phone,
+        'student_password': password,
+      }),
+    );
     final data = json.decode(utf8.decode(response.bodyBytes));
-    await refreshStudents();
-    return data['result'];
+    if (data is List && data.isNotEmpty) {
+      return 'OK';
+    } else {
+      return 'FAIL';
+    }
   }
 
   Future<void> refreshStudents() async{

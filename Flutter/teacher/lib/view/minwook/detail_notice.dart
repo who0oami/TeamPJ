@@ -7,6 +7,7 @@ Author : 황민욱
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teacher/util/acolor.dart';
+import 'package:teacher/util/message.dart';
 import 'package:teacher/view/minwook/update_notice.dart';
 import 'package:teacher/vm/minwook/notice_provider.dart';
 import 'package:teacher/vm/minwook/teacher_provider.dart';
@@ -19,12 +20,14 @@ class DetailNotice extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
 
     final noticeDetailAsync = ref.watch(noticeDetailProvider(id));
+    final noticeDetailAction = ref.read(noticeActionProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: Text(''), centerTitle: true),
       body: noticeDetailAsync.when(
         data: (noticeDetail) {
-          final teacherNameAsync = ref.watch(teacherNameByIdProvider(noticeDetail!.teacher_id));
+            if (noticeDetail == null) {return const Center(child: Text('삭제된 공지임'));}
+          final teacherNameAsync = ref.watch(teacherNameByIdProvider(noticeDetail.teacher_id));
           return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -57,10 +60,34 @@ class DetailNotice extends ConsumerWidget {
                     ),
                     Expanded(
                       child: Center(
-                        child: Text(
-                          noticeDetail.notice_content
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 30),
+                              child: Text(
+                                noticeDetail.notice_content
+                              ),
+                            ),
+                            noticeDetail.notice_images.isEmpty
+                            ? SizedBox.shrink()
+                            : SizedBox(
+                              width: MediaQuery.of(context).size.width,
+                              height: 300,
+                              child: ListView.builder(
+                                itemCount: noticeDetail.notice_images.length,
+                                scrollDirection: Axis.horizontal,
+                                itemBuilder: (context, index) {
+                                  return SizedBox(
+                                    width: 250,
+                                    height: 250,
+                                    child: Image.network(noticeDetail.notice_images[index]),
+                                  );
+                                },
+                              ),
+                            )
+                          ],
                         )
-                      )
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 30),
@@ -73,7 +100,7 @@ class DetailNotice extends ConsumerWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => UpdateNotice(
-
+                                    noticeId: id
                                   ),
                                 )
                               );
@@ -91,7 +118,42 @@ class DetailNotice extends ConsumerWidget {
                             padding: const EdgeInsets.only(left: 10),
                             child: ElevatedButton(
                               onPressed: () {
-                                //
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (ctx) {
+                                    return AlertDialog(
+                                      title: const Text('삭제 확인'),
+                                      content: const Text('정말 삭제하시겠습니까?'),
+                                      actions: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(ctx),
+                                              child: const Text('취소'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () async {
+                                                Navigator.pop(ctx);
+                                                try {
+                                                  await noticeDetailAction.deleteNotice(id: id);
+                                                  if (!context.mounted) return;
+                                                  Navigator.pop(context);
+                                                  Message.snackBar(context, '삭제 완료', 1, Colors.blue);
+                                                } catch (e) {
+                                                  if (!context.mounted) return;
+                                                  Message.snackBar(context, '삭제 실패: $e', 1, Colors.red);
+                                                }
+                                              },
+                                              child: const Text('확인'),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Acolor.errorBackgroundColor,

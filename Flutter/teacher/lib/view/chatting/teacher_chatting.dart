@@ -32,6 +32,18 @@ final chatTargetProvider = FutureProvider<List<dynamic>>((ref) async {
     } else {
       throw Exception('서버 응답 오류: ${response.statusCode}');
     }
+    final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+    final Map<int, String> map = {};
+    for (final item in data) {
+      final id = item['category_id'];
+      final title = item['category_title'];
+      if (id is int && title is String) {
+        map[id] = title;
+      } else if (id != null && title != null) {
+        map[int.parse(id.toString())] = title.toString();
+      }
+    }
+    return map;
   } catch (e) {
     throw Exception('MySQL 서버 연결 확인 필요: $e');
   }

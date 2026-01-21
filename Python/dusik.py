@@ -20,6 +20,10 @@ class Student(BaseModel):
     student_birthday: str = Form(...)
     student_image: UploadFile = File(...)
 
+class StudentLogin(BaseModel):
+    student_phone: str
+    student_password: str
+
 def connect():
     conn = pymysql.connect(
         host=config.hostip,
@@ -66,3 +70,29 @@ async def insert(student: Student):
         print("Error :", ex)
         return {'result':'Error'}
         # >>>>> student 테이블 , 학생 추가_ 신규 학생 등록용
+
+@router.post("/student_login")
+async def login(student: StudentLogin):
+    # Connection으로 부터 Cursor 생성
+    conn = connect()
+    curs = conn.cursor()
+
+    # SQL 문장
+    try:
+        sql = """
+                SELECT count(student_id), student_id, student_name
+                FROM student
+                WHERE student_phone=%s AND student_password=%s
+                """
+        curs.execute(sql, ( student.student_phone, student.student_password ))
+        conn.commit()
+        result = curs.fetchone()
+        conn.close()
+        if result and result[0] == 1:
+            return [{'student_id' : result[1], 'student_name' : result[2],}]
+        else:
+            return {'result' : 'Fail'}
+    except Exception as e:
+        print('Error:', e)
+        return {'result' : 'Error'}
+        # >>>>> student 테이블 , 학생 로그인 확인용

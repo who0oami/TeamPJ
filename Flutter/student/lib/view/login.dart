@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:student/util/acolor.dart';
 import 'package:student/util/message.dart';
+import 'package:student/view/main_page.dart';
 import 'package:student/vm/dusik/student%20_%20provider.dart';
 
 /* 
@@ -168,9 +169,10 @@ void checkLogin() async {
     }
     //서버로 로그인 요청 (위의 if문에 걸리지 않았을 때
     final result = await studentNotifier.loginStudent(phone, pw);
-
-    // 3. 결과값에 따른 처리
-    if (result == 'OK') {
+    //결과값이 OK
+    if (result != 'FAIL') {
+      // box.write('p_userid', result);
+      print("저장된 ID: ${box.read('p_userid')}"); // 확인용 지울 예정입니다
       // 성공 시 다이얼로그
       Message.dialog(
         context,
@@ -178,8 +180,12 @@ void checkLogin() async {
         '오늘도 즐겁게 공부해보아요',
         Colors.white,
       );
-      saveStorage();
+      saveStorage(result);
       // 페이지 이동
+      Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MainPage()),
+    );
     } else {
       // 실패 시 스낵바
       Message.snackBar(
@@ -190,8 +196,10 @@ void checkLogin() async {
       );
     }
   }
-  void saveStorage(){
-    box.write('p_userid', phoneController.text.trim());
-    box.write('p_password', pwController.text.trim());
+  void saveStorage(String studentId){
+    box.write('p_userid', studentId);
+    phoneController.clear();
+    pwController.clear();
   }
 } // class
+

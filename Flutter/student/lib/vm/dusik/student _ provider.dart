@@ -31,18 +31,18 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
     return (data['results'] as List).map((d) => Student.fromJson(d)).toList();
   }
 
-  //  Future<List<Student>> loginStudents() async{ 
-  // //   isLoading = true;
-  // //   error = null; try - catch 방법에서 수정
-  //   final res = await http.get(Uri.parse("$baseUrl/student_login"));
+   Future<List<Student>> loginStudents() async{ 
+  //   isLoading = true;
+  //   error = null; try - catch 방법에서 수정
+    final res = await http.get(Uri.parse("$baseUrl/student_login"));
 
-  //   if(res.statusCode != 200){
-  //     throw Exception('불러오기 실패: ${res.statusCode}');
-  //   }
+    if(res.statusCode != 200){
+      throw Exception('불러오기 실패: ${res.statusCode}');
+    }
 
-  //   final data = json.decode(utf8.decode(res.bodyBytes));
-  //   return (data['results'] as List).map((d) => Student.fromJson(d)).toList(); // 차이점: list로 return
-  // }
+    final data = json.decode(utf8.decode(res.bodyBytes));
+    return (data['results'] as List).map((d) => Student.fromJson(d)).toList(); // 차이점: list로 return
+  }
 
   Future<String> insertStudent(Student s)async{
     final url = Uri.parse("$baseUrl/insert");
@@ -57,7 +57,7 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
   }
 
   Future<String> loginStudent(String phone, String password) async {
-    final url = Uri.parse("$baseUrl/login");
+    final url = Uri.parse("$baseUrl/student_login");
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -67,11 +67,13 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
       }),
     );
     final data = json.decode(utf8.decode(response.bodyBytes));
+    print("서버 응답 데이터: $data");
     if (data.toString().contains('Fail') || data.toString().contains('Error')) {
     return 'FAIL';
   } 
-  if (data.isNotEmpty) {
-    return 'OK';
+  if (data is List && data.isNotEmpty) {
+    return data[0]['student_id'].toString();
+    
   }
   return 'FAIL';
 }

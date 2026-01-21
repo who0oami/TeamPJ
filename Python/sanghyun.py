@@ -57,29 +57,34 @@ async def get_categories():
 
 @router.get("/chat_list")
 async def get_chat_list():
-    db = connect()
+    try:
+        db = connect()
+    except Exception as e:
+        return [{
+            "guardian_id": -1,
+            "guardian_name": "DB 연결 오류",
+            "student_id": None,
+            "student_name": "",
+            "student_image": None,
+            "category_id": None,
+            "category_title": str(e),
+        }]
     try:
         cursor = db.cursor()
-        # [수정] category 테이블을 조인하여 category_title과 category_id를 명시적으로 가져옴
         sql = """
             SELECT 
-                g.guardian_id, g.guardian_name, 
-                s.student_id, s.student_name, s.student_image,
-                c.category_id, c.category_title
+                g.guardian_id, g.guardian_name,
+                g.student_id,
+                s.student_name, s.student_image,
+                NULL AS category_id, NULL AS category_title
             FROM guardian g
-            LEFT JOIN student s ON g.guardian_id = s.student_id
-            LEFT JOIN category c ON g.category_id = c.category_id
+            LEFT JOIN student s ON g.student_id = s.student_id
         """
         cursor.execute(sql)
         results = cursor.fetchall()
-        
-        # 이미지 데이터 base64 변환 로직 (필요시 추가)
-        import base64
         for row in results:
             if row.get('student_image'):
                 row['student_image'] = base64.b64encode(row['student_image']).decode('utf-8')
-        
         return results
     finally:
         db.close()
-

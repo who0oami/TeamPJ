@@ -11,6 +11,11 @@ import 'package:intl/intl.dart';
 
 // --- [Providers] ---
 
+String _readableText(dynamic value, String fallback) {
+  final String s = (value ?? '').toString().trim();
+  return s.isEmpty ? fallback : s;
+}
+
 // 1. MySQL 가디언/학생/카테고리 목록 로더
 final chatTargetProvider = FutureProvider<List<dynamic>>((ref) async {
   final String host = Platform.isAndroid ? "10.0.2.2" : "127.0.0.1";
@@ -21,18 +26,61 @@ final chatTargetProvider = FutureProvider<List<dynamic>>((ref) async {
     if (response.statusCode == 200) {
       return json.decode(utf8.decode(response.bodyBytes));
     } else {
-      throw Exception('서버 응답 오류');
+      throw Exception('서버 응답 오류: ${response.statusCode}');
     }
   } catch (e) {
-    throw Exception('MySQL 서버 연결 확인 필요');
+    throw Exception('MySQL 서버 연결 확인 필요: $e');
+  }
+});
+
+// 1-1. 카테고리 목록 로더 (MySQL)
+final categoryProvider = FutureProvider<Map<int, String>>((ref) async {
+  final String host = Platform.isAndroid ? "10.0.2.2" : "127.0.0.1";
+  final String url = 'http://$host:8000/sanghyun/categories';
+
+  try {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode != 200) {
+      throw Exception('서버 응답 오류: ${response.statusCode}');
+    }
+    final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+    final Map<int, String> map = {};
+    for (final item in data) {
+      final id = item['category_id'];
+      final title = item['category_title'];
+      if (id is int && title is String) {
+        map[id] = title;
+      } else if (id != null && title != null) {
+        map[int.parse(id.toString())] = title.toString();
+      }
+    }
+    return map;
+  } catch (e) {
+    throw Exception('카테고리 로드 실패: $e');
   }
 });
 
 // 2. 'atti' 데이터베이스 인스턴스 전용 컬렉션 참조
 final chattingCollectionProvider = Provider<CollectionReference>(
-  (ref) => FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'atti')
-      .collection('chatting'),
+  (ref) => FirebaseFirestore.instance.collection('chatting'),
 );
+
+// 2-1. guardian_id 기준 최신 채팅의 category_id 로더 (Firebase)
+final latestCategoryIdProvider = FutureProvider.family<int?, int>((ref, guardianId) async {
+  final col = ref.watch(chattingCollectionProvider);
+  final snap = await col
+      .where('guardian_id', isEqualTo: guardianId)
+      .orderBy('chatting_date', descending: true)
+      .limit(1)
+      .get();
+
+  if (snap.docs.isEmpty) return null;
+  final data = snap.docs.first.data() as Map<String, dynamic>;
+  final id = data['category_id'];
+  if (id is int) return id;
+  if (id == null) return null;
+  return int.tryParse(id.toString());
+});
 
 // 3. 현재 선택된 문의 대상 정보
 final selectedInquiryProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
@@ -43,9 +91,11 @@ final chatStreamProvider = StreamProvider.autoDispose((ref) {
   if (inquiry == null) return Stream.value([]);
   
   final col = ref.watch(chattingCollectionProvider);
+  final int? guardianId = int.tryParse(inquiry['guardian_id'].toString());
+  if (guardianId == null) return Stream.value([]);
   
   return col
-      .where('guardian_id', isEqualTo: inquiry['guardian_id'])
+      .where('guardian_id', isEqualTo: guardianId)
       .orderBy('chatting_date', descending: false)
       .snapshots()
       .map((snap) => snap.docs.map((doc) {
@@ -54,8 +104,10 @@ final chatStreamProvider = StreamProvider.autoDispose((ref) {
                 ? (d['chatting_date'] as Timestamp).toDate() 
                 : DateTime.now();
 
+            final String contents =
+                (d['chatting_contents'] ?? d['chatting_content'] ?? '').toString();
             return {
-              'contents': d['chatting_contents'] ?? '',
+              'contents': contents,
               'isTeacher': d['teacher_id'] != null,
               'date': date,
             };
@@ -85,6 +137,7 @@ class TeacherChatting extends ConsumerWidget {
 
   Widget _buildSidebar(WidgetRef ref) {
     final listAsync = ref.watch(chatTargetProvider);
+    final categoriesAsync = ref.watch(categoryProvider);
     final selectedInquiry = ref.watch(selectedInquiryProvider);
 
     return Column(
@@ -94,31 +147,56 @@ class TeacherChatting extends ConsumerWidget {
         const SizedBox(height: 20),
         Expanded(
           child: listAsync.when(
-            data: (items) => ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (ctx, idx) {
+            data: (items) => categoriesAsync.when(
+              data: (categoryMap) => ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (ctx, idx) {
                 final item = items[idx];
                 final bool isSelected = selectedInquiry?['guardian_id'] == item['guardian_id'];
-                
+                final int? guardianId = int.tryParse(item['guardian_id'].toString());
+                final String studentName = _readableText(
+                  item['student_name'] ?? item['guardian_name'],
+                  '이름 없음',
+                );
+                final categoryIdAsync = guardianId == null
+                    ? const AsyncValue<int?>.data(null)
+                    : ref.watch(latestCategoryIdProvider(guardianId));
+
                 Uint8List? img;
                 if (item['student_image'] != null) img = base64Decode(item['student_image']);
 
-                return ListTile(
-                  selected: isSelected,
-                  selectedTileColor: const Color(0xFFFFF9E6),
-                  onTap: () => ref.read(selectedInquiryProvider.notifier).state = item,
-                  leading: CircleAvatar(
-                    backgroundImage: img != null ? MemoryImage(img) : null,
-                    child: img == null ? const Icon(Icons.person) : null,
-                  ),
-                  title: Text('${item['student_name']} 학부모님', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  // MySQL JOIN 결과인 category_title 표시
-                  subtitle: Text('문의 : ${item['category_title'] ?? '제목 없음'}'),
-                );
-              },
+                  return ListTile(
+                    selected: isSelected,
+                    selectedTileColor: const Color(0xFFFFF9E6),
+                    onTap: () => ref.read(selectedInquiryProvider.notifier).state = item,
+                    leading: CircleAvatar(
+                      backgroundImage: img != null ? MemoryImage(img) : null,
+                      child: img == null ? const Icon(Icons.person) : null,
+                    ),
+                    title: Text(
+                      '$studentName 학부모님',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    // Firebase category_id -> MySQL category_title 매핑
+                    subtitle: categoryIdAsync.when(
+                      data: (categoryId) {
+                        final String categoryTitle = _readableText(
+                          categoryId == null ? null : categoryMap[categoryId],
+                          '제목 없음',
+                        );
+                        return Text('문의 : $categoryTitle');
+                      },
+                      loading: () => const Text('문의 : 불러오는 중...'),
+                      error: (e, s) => Text('문의 : 제목 없음'),
+                    ),
+                  );
+                },
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('카테고리 로드 실패: $e')),
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(child: Text('데이터 로드 실패')),
+            error: (e, s) => Center(child: Text('데이터 로드 실패: $e')),
           ),
         ),
       ],
@@ -149,8 +227,9 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
       await col.add({
         'category_id': inquiry['category_id'] ?? 1,
         'chatting_contents': text,
+        'chatting_content': text,
         'chatting_date': FieldValue.serverTimestamp(), // 서버 시간 고정 저장
-        'guardian_id': inquiry['guardian_id'],
+        'guardian_id': int.tryParse(inquiry['guardian_id'].toString()) ?? inquiry['guardian_id'],
         'student_id': inquiry['student_id'] ?? 1,
         'teacher_id': 1,
         'chatting_image': "", 
@@ -204,7 +283,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          if (!isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -215,7 +294,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
             child: Text(contents, style: TextStyle(color: isMe ? Colors.white : Colors.black, fontSize: 16)),
           ),
           const SizedBox(width: 8),
-          if (!isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          if (isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
         ],
       ),
     );

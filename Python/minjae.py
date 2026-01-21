@@ -9,7 +9,7 @@ router = APIRouter()
 def connect():
     conn = pymysql.connect(
         host=config.hostip,
-        port=config.hostPort,
+        port=config.hostport,
         user=config.hostuser,
         password=config.hostpassword,
         database=config.hostdatabase,
@@ -40,5 +40,4 @@ async def select(guardian_id: int):
     } for row in rows]
 
     return {'results': result}
-
 

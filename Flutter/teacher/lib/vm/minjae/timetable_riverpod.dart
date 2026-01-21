@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:guardian/model/timetable.dart';
+
+import 'package:teacher/model/timetable.dart';
 
 
 /// 🔹 Firestore 타임테이블 컬렉션 Provider

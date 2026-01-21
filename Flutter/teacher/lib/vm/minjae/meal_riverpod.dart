@@ -1,13 +1,8 @@
-/* 
-Description : Firebase HomeworkNotifier
-Date : 2026-1-21
-Author : 황민욱 / 정시온이랑 같이 작업!
-*/
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:student/model/lunch_menu.dart';
+import 'package:teacher/model/lunch_menu.dart';
+
 
 /// 🔹 Firestore 컬렉션 Provider
 final lunchCollectionProvider = Provider<CollectionReference>((ref) {

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teacher/model/student.dart';
 import 'package:http/http.dart' as http;
+import 'package:student/model/student.dart';
 
 class StudentNotifier extends AsyncNotifier<List<Student>>{
   final String baseUrl = "http://127.0.0.1:8000/dusik";
@@ -31,6 +31,19 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
     return (data['results'] as List).map((d) => Student.fromJson(d)).toList();
   }
 
+  //  Future<List<Student>> loginStudents() async{ 
+  // //   isLoading = true;
+  // //   error = null; try - catch 방법에서 수정
+  //   final res = await http.get(Uri.parse("$baseUrl/student_login"));
+
+  //   if(res.statusCode != 200){
+  //     throw Exception('불러오기 실패: ${res.statusCode}');
+  //   }
+
+  //   final data = json.decode(utf8.decode(res.bodyBytes));
+  //   return (data['results'] as List).map((d) => Student.fromJson(d)).toList(); // 차이점: list로 return
+  // }
+
   Future<String> insertStudent(Student s)async{
     final url = Uri.parse("$baseUrl/insert");
     final response = await http.post(
@@ -44,7 +57,7 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
   }
 
   Future<String> loginStudent(String phone, String password) async {
-    final url = Uri.parse("$baseUrl/student_login");
+    final url = Uri.parse("$baseUrl/login");
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -54,12 +67,14 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
       }),
     );
     final data = json.decode(utf8.decode(response.bodyBytes));
-    if (data is List && data.isNotEmpty) {
-      return 'OK';
-    } else {
-      return 'FAIL';
-    }
+    if (data.toString().contains('Fail') || data.toString().contains('Error')) {
+    return 'FAIL';
+  } 
+  if (data.isNotEmpty) {
+    return 'OK';
   }
+  return 'FAIL';
+}
 
   Future<void> refreshStudents() async{
     state = const AsyncLoading();

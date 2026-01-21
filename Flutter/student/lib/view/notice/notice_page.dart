@@ -7,6 +7,7 @@ Author : 정시온
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:student/view/notice/homework_page.dart';
 import 'package:student/vm/sion/notice_provider.dart';
 
 class NoticePage extends ConsumerStatefulWidget {
@@ -106,6 +107,9 @@ class _NoticeState extends ConsumerState<NoticePage>{
             notices.notice_content,
             style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.5),
           ),
+          const SizedBox(height: 12),
+          // 4. 사진
+          ImageSlider(images:notices.notice_images),
           const SizedBox(height: 12),
         ],
       ),

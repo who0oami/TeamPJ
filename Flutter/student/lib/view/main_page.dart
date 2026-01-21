@@ -19,17 +19,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
-import 'package:student/view/restitutor/calendar.dart';
 import 'package:student/view/restitutor/weather/weather.dart';
 import 'package:student/vm/restitutor/attendance_provider.dart';
 import 'package:student/vm/sanghyun/student_provider.dart';
+// [Codex] Use student Firebase providers for timetable/lunch/schedule data.
+import 'package:student/vm/sion/lunch_provider.dart';
+import 'package:student/vm/sion/schedule_provider.dart';
+import 'package:student/vm/sion/timetable_provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../util/acolor.dart';
+// [Codex] Models used by Firebase-backed UI sections.
+import '../model/lunch_menu.dart';
+import '../model/schedule.dart';
 import '../model/student.dart';
+import '../model/timetable.dart';
 
 // 캘린더 관리 위해서 필요한 프로바이더
 final selectedDayProvider = StateProvider<DateTime?>((ref) => DateTime.now());
 final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
+
+// [Codex] Normalize calendar dates for schedule lookup.
+DateTime _onlyDate(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({super.key});
@@ -39,17 +49,25 @@ class MainPage extends ConsumerStatefulWidget {
 }
 
 class _MainPageState extends ConsumerState<MainPage> {
-
   @override
   Widget build(BuildContext context) {
     final selectedDay = ref.watch(selectedDayProvider);
+    final focusedDay = ref.watch(focusedDayProvider);
+    final scheduleMap = ref.watch(scheduleMapProvider);
     final studentAsync = ref.watch(studentFutureProvider);
     final attendAsync = ref.watch(attendProvider);
+    final timetableAsync = ref.watch(timetableListProvider);
+    final lunchmenuAsync = ref.watch(lunchmenuListProvider);
 
     String formattedDate = DateFormat(
       'yyyy.MM.dd EEEE',
       'ko_KR',
     ).format(selectedDay ?? DateTime.now());
+    final todayKey = _onlyDate(selectedDay ?? DateTime.now());
+    final todaySchedules = scheduleMap[todayKey] ?? const <Schedule>[];
+    final headerMessage = todaySchedules.isNotEmpty
+        ? todaySchedules.first.schedule_title
+        : "오늘 일정 없음";
 
     return Scaffold(
       appBar: AppBar(
@@ -58,22 +76,23 @@ class _MainPageState extends ConsumerState<MainPage> {
         backgroundColor: Acolor.primaryColor,
         foregroundColor: Acolor.onPrimaryColor,
       ),
+      drawer: _buildStudentDrawer(studentAsync),
       backgroundColor: Acolor.onPrimaryColor,
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Column(
           children: [
-            _buildDateHeader(formattedDate),
+            _buildDateHeader(formattedDate, headerMessage),
             AnimatedColorButton(),
             _buildProfileCard(studentAsync),
             _buildSectionTitle("오늘 일정"),
-            Calendar(),
+            _buildCalendar(ref, selectedDay, focusedDay),
             _buildSectionTitle("시간표"),
-            _buildTimetable(),
+            _buildTimetableSection(timetableAsync),
             _buildSectionTitle("오늘 급식"),
-            _buildMealGrid(),
+            _buildMealSection(lunchmenuAsync),
             const SizedBox(height: 100),
-            AttendancePopupGate(attendAsync: attendAsync)
+            AttendancePopupGate(attendAsync: attendAsync),
           ],
         ),
       ),
@@ -84,7 +103,63 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   // --- UI 구성 위젯들 ---
 
-  Widget _buildDateHeader(String date) {
+  Widget _buildStudentDrawer(AsyncValue<Student> studentAsync) {
+    return Drawer(
+      child: SafeArea(
+        child: studentAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('에러 발생: $err')),
+          data: (student) {
+            return ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: Acolor.successTextColor,
+                      backgroundImage: MemoryImage(student.student_image),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student.student_name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          student.student_phone,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.account_circle),
+                  title: const Text('학생 정보'),
+                  onTap: () {},
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('설정'),
+                  onTap: () {},
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateHeader(String date, String message) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Acolor.onPrimaryColor,
@@ -97,9 +172,12 @@ class _MainPageState extends ConsumerState<MainPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(date, style: const TextStyle(color: Colors.grey)),
-              const Text(
-                "오늘 숙제가 있어요!",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -202,7 +280,8 @@ class _MainPageState extends ConsumerState<MainPage> {
     DateTime? selectedDay,
     DateTime focusedDay,
   ) {
-    // 캘린더 만들기
+    // [Codex] Calendar with schedule markers.
+    final scheduleMap = ref.watch(scheduleMapProvider);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(8),
@@ -227,6 +306,10 @@ class _MainPageState extends ConsumerState<MainPage> {
           ref.read(selectedDayProvider.notifier).state = newSelectedDay;
           ref.read(focusedDayProvider.notifier).state = newFocusedDay;
         },
+        eventLoader: (day) {
+          final key = _onlyDate(day);
+          return scheduleMap[key] ?? const <Schedule>[];
+        },
         calendarStyle: CalendarStyle(
           todayDecoration: BoxDecoration(
             color: Acolor.primaryColor,
@@ -236,98 +319,177 @@ class _MainPageState extends ConsumerState<MainPage> {
             color: Acolor.successBackColor,
             shape: BoxShape.circle,
           ),
+          markerDecoration: const BoxDecoration(
+            color: Colors.redAccent,
+            shape: BoxShape.circle,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTimetable() {
-    // 시간표 줄 추가
+  Widget _buildTimetableSection(AsyncValue<List<Timetable>> timetableAsync) {
+    return timetableAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Text('시간표 로드 오류: $err'),
+      ),
+      data: (timetables) {
+        if (timetables.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text('등록된 시간표가 없습니다.'),
+          );
+        }
+        final timetable = timetables.firstWhere(
+          (t) => t.timetable_grade == 1 && t.timetable_class == 1,
+          orElse: () => timetables.first,
+        );
+        return _buildTimetable(timetable);
+      },
+    );
+  }
+
+  // [Codex] Render Firestore timetable model.
+  Widget _buildTimetable(Timetable timetable) {
+    final Map<String, List<String>> table = timetable.timetable_table;
+    const days = ['월', '화', '수', '목', '금'];
+    final int maxPeriod = timetable.timetable_period > 0
+        ? timetable.timetable_period
+        : 6;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Acolor.appBarBackgroundColor, blurRadius: 1),
+        ],
       ),
       child: Table(
-        border: TableBorder.all(color: Colors.grey.shade200),
+        border: TableBorder.all(color: Colors.grey),
+        columnWidths: const {0: FixedColumnWidth(60)},
         children: [
-          _buildTableRow([
-            '',
-            '월',
-            '화',
-            '수',
-            '목',
-            '금',
-          ], isHeader: true), // 제일 상단
-          _buildTableRow(['1교시', '국어', '사회', '과학', '국어', '도덕']),
-          _buildTableRow(['2교시', '체육', '미술', '국어', '창체', '국어']),
-          _buildTableRow(['3교시', '과학', '미술', '영어', '사회', '국어']),
-          _buildTableRow(['4교시', '수학', '영어', '수학', '체육', '수학']),
+          TableRow(
+            children: [_cell(''), ...days.map((d) => _cell(d)).toList()],
+          ),
+          for (int i = 0; i < maxPeriod; i++)
+            TableRow(
+              children: [
+                _cell('${i + 1}교시', isHeader: true),
+                ...days.map((day) {
+                  final subjects = table[day] ?? const <String>[];
+                  return _cell(i < subjects.length ? subjects[i] : '');
+                }).toList(),
+              ],
+            ),
         ],
       ),
     );
   }
 
-  TableRow _buildTableRow(List<String> cells, {bool isHeader = false}) {
-    // 시간표
-    return TableRow(
-      children: cells
-          .map(
-            (cell) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: Text(
-                  cell,
-                  style: TextStyle(
-                    fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
+  Widget _cell(String text, {bool isHeader = false}) {
+    return Container(
+      height: 48,
+      alignment: Alignment.center,
+      color: isHeader ? Colors.blue.shade50 : null,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
     );
   }
 
-  Widget _buildMealGrid() {
-    // 급식표
-    final List<String> meals = [
-      '잡곡밥',
-      '미역국',
-      '미트볼',
-      '김치',
-      '미역줄기',
-      '요구르트',
-    ]; // 임시로 더미 데이터 넣기
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+  Widget _buildMealSection(AsyncValue<List<LunchMenu>> lunchAsync) {
+    return lunchAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Text('급식 데이터 오류: $err'),
+      ),
+      data: (menus) {
+        if (menus.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text('오늘 급식이 없습니다.'),
+          );
+        }
+        return _buildMealGrid(menus);
+      },
+    );
+  }
+
+  // [Codex] Render lunch menu grid from Firestore data.
+  Widget _buildMealGrid(List<LunchMenu> menus) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Acolor.appBarBackgroundColor, blurRadius: 1),
+        ],
+      ),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: meals.length,
+        itemCount: menus.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisExtent: 65,
+          mainAxisExtent: 130,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
+          final menu = menus[index];
           return Container(
             decoration: BoxDecoration(
               color: Acolor.primaryColor,
               borderRadius: BorderRadius.circular(20),
             ),
-            alignment: Alignment.center,
-            child: Text(
-              meals[index],
-              style: TextStyle(
-                color: Acolor.onPrimaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    menu.lunch_menu_image,
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) {
+                      return const Icon(
+                        Icons.restaurant,
+                        size: 48,
+                        color: Colors.white,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  menu.lunch_menu_name,
+                  style: TextStyle(
+                    color: Acolor.onPrimaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           );
         },
@@ -361,13 +523,13 @@ class _MainPageState extends ConsumerState<MainPage> {
   }
 }
 
-
 class AttendancePopupGate extends ConsumerStatefulWidget {
   final AsyncValue<bool> attendAsync;
   const AttendancePopupGate({super.key, required this.attendAsync});
 
   @override
-  ConsumerState<AttendancePopupGate> createState() => _AttendancePopupGateState();
+  ConsumerState<AttendancePopupGate> createState() =>
+      _AttendancePopupGateState();
 }
 
 class _AttendancePopupGateState extends ConsumerState<AttendancePopupGate> {
@@ -394,8 +556,13 @@ class _AttendancePopupGateState extends ConsumerState<AttendancePopupGate> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text("출석 체크",
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const Text(
+                        "출석 체크",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       const Text("오늘 출석체크가 필요해요!"),
                       const SizedBox(height: 20),

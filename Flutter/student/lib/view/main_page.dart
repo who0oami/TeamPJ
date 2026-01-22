@@ -100,7 +100,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ATTI'),
+        title: Image.asset('images/atti_logo.png',width: 70,),
         centerTitle: true,
         backgroundColor: Acolor.primaryColor,
         foregroundColor: Acolor.onPrimaryColor,

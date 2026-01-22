@@ -1,56 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:student/util/acolor.dart';
-import 'package:student/util/message.dart';
-import 'package:student/view/main_page.dart';
-import 'package:student/vm/dusik/student%20_%20provider.dart';
+import 'package:teacher/util/acolor.dart';
+import 'package:teacher/util/message.dart';
+import 'package:teacher/view/minjae/teacher_mainpage.dart';
+import 'package:teacher/vm/dusik/teacher_login_provider.dart';
 
 /* 
-Description : 학생 로그인 페이지
-  - 1) body 생성 전, get_storage 에 정보 저장 되어 있는 경우 , main 페이지로 이동
-  - 2) 전화번호 , 비밀번호 입력.
+Description : 선생님 로그인 페이지
+  - 1) body 생성 전, get_storage 에 정보 저장 되어 있는 경우 , main_page 페이지로 이동 (이전 화면에서)
+  - 2) 이메일주소 , 비밀번호 입력.
       - 미 입력시 snackBar로 알림 띄워주기
-  - 3) 입력 정보와 DB 학생 정보 동일 한지 확인
+  - 3) 입력 정보와 DB 선생 정보 동일 한지 확인
   - 4) 맞게 입력 된 경우, Dialog 로 환영 창 띄워주기
       - get_storage 로 정보 저장
       - 틀린 경우 snackBar로 알림 띄워주기
   - 5) 확인 누르면 메인 페이지로 이동
-      - 학생 정보 넘겨주기
 Date : 2026-01-17
 Author : 지현
 */
 
-class Login extends ConsumerStatefulWidget {
-  const Login({super.key});
+class TeacherLogin extends ConsumerStatefulWidget {
+  const TeacherLogin({super.key});
 
   @override
-  ConsumerState<Login> createState() => _LoginState();
+  ConsumerState<TeacherLogin> createState() => _TeacherLoginState();
 }
 
-class _LoginState extends ConsumerState<Login> {
+class _TeacherLoginState extends ConsumerState<TeacherLogin> {
   // Property
-  late TextEditingController phoneController; // Phone
+  late TextEditingController emailController; // email
   late TextEditingController pwController; // Password
   final box = GetStorage(); // GetStorage
 
   @override
   void initState() {
     super.initState();
-    phoneController = TextEditingController();
+    emailController = TextEditingController();
     pwController = TextEditingController();
     initStorage();
   }
 
   initStorage(){ // key, value
-    box.write('p_userid', '');
-    box.write('p_password', '');
+    box.write('t_userid', '');
+    box.write('t_password', '');
   }
 
 
   @override
   void dispose() {
-    phoneController.dispose();
+    emailController.dispose();
     pwController.dispose();
     box.erase();
     super.dispose();
@@ -59,7 +58,7 @@ class _LoginState extends ConsumerState<Login> {
 
   @override
   Widget build(BuildContext context) {
-    final studentAsync = ref.watch(studentNotifierProvider);
+    final teacherAsync = ref.watch(teacherLoginNotifierProvider);
     return Scaffold(
       backgroundColor: Acolor.appBarForegroundColor,
       appBar: AppBar(
@@ -72,11 +71,11 @@ class _LoginState extends ConsumerState<Login> {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Image.asset(
-                "images/head_book.png",
+                "images/atti_logo.png",
                 width: 150,
                 ),
             ),
-            Text("학생 정보 입력"),
+            Text("선생님 정보 입력"),
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -87,13 +86,13 @@ class _LoginState extends ConsumerState<Login> {
                       crossAxisAlignment:CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "전화번호",
+                          "이메일",
                           style: TextStyle(
                             fontWeight: FontWeight.w600
                           ),
                           ),
                         TextField(
-                          controller: phoneController,
+                          controller: emailController,
                           decoration: InputDecoration(
                             border: UnderlineInputBorder(
                               borderSide: BorderSide(color: Colors.grey)
@@ -101,7 +100,7 @@ class _LoginState extends ConsumerState<Login> {
                             focusedBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Colors.blue, width: 2), // 클릭하면 파란색 두껍게
                             ),
-                            labelText: '전화번호를 입력하세요',
+                            labelText: '이메일을 입력하세요',
                             // labelStyle: TextStyle(color: Acolor.successBackColor), _ 컬러가 이상함, 나중에 색상 변경 후 수정 예정
                             labelStyle: TextStyle(color: Colors.blue),
                           ),
@@ -155,24 +154,24 @@ class _LoginState extends ConsumerState<Login> {
   } // build
   // ---- Functions ----
 void checkLogin() async {
-    final phone = phoneController.text.trim();
+    final email = emailController.text.trim();
     final pw = pwController.text.trim();
-    final studentNotifier = ref.read(studentNotifierProvider.notifier);
-    if (phone.isEmpty || pw.isEmpty) {
+    final teacherNotifier = ref.read(teacherLoginNotifierProvider.notifier);
+    if (email.isEmpty || pw.isEmpty) {
       Message.snackBar(
         context,
-        '전화번호와 비밀번호를 입력하세요',
+        '이메일과 비밀번호를 입력하세요',
         2,
         Colors.red,
       );
       return;
     }
     //서버로 로그인 요청 (위의 if문에 걸리지 않았을 때
-    final result = await studentNotifier.loginStudent(phone, pw);
+    final result = await teacherNotifier.loginTeacher(email,pw);
     //결과값이 OK
     if (result != 'FAIL') {
-    phoneController.clear();
-    pwController.clear();
+      emailController.clear();
+      pwController.clear();
       // 성공 시 다이얼로그
       Message.dialog(
         context,
@@ -184,7 +183,7 @@ void checkLogin() async {
       // 페이지 이동
       Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => MainPage()),
+      MaterialPageRoute(builder: (context) => TeacherMainPage()),
     );
     } else {
       // 실패 시 스낵바
@@ -196,9 +195,9 @@ void checkLogin() async {
       );
     }
   }
-  // void saveStorage(String studentId){
-  //   box.write('p_userid', studentId);
-  //   phoneController.clear();
+  // void saveStorage(String teacherId){
+  //   box.write('p_userid', teacherId);
+  //   emailController.clear();
   //   pwController.clear();
   // }
 } // class

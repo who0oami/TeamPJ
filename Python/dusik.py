@@ -24,6 +24,14 @@ class StudentLogin(BaseModel):
     student_phone: str
     student_password: str
 
+class TeacherLogin(BaseModel):
+    teacher_email: str
+    teacher_password: str
+
+class GuardianLogin(BaseModel):
+    guardian_email: str
+    guardian_password: str
+
 def connect():
     conn = pymysql.connect(
         host=config.hostip,
@@ -96,3 +104,55 @@ async def login(student: StudentLogin):
         print('Error:', e)
         return {'result' : 'Error'}
         # >>>>> student 테이블 , 학생 로그인 확인용
+
+@router.post("/teacher_login")
+async def login_teacher(teacher: TeacherLogin):
+    # Connection으로 부터 Cursor 생성
+    conn = connect()
+    curs = conn.cursor()
+
+    # SQL 문장
+    try:
+        sql = """
+                SELECT count(teacher_id), teacher_id, teacher_name
+                FROM teacher
+                WHERE teacher_email=%s AND teacher_password=%s
+                """
+        curs.execute(sql, ( teacher.teacher_email, teacher.teacher_password ))
+        conn.commit()
+        result = curs.fetchone()
+        conn.close()
+        if result and result[0] == 1:
+            return [{'teacher_id' : result[1], 'teacher_name' : result[2],}]
+        else:
+            return {'result' : 'Fail'}
+    except Exception as e:
+        print('Error:', e)
+        return {'result' : 'Error'}
+        # >>>>> student 테이블 , 선생 로그인 확인용
+
+@router.post("/guardian_login")
+async def login_guardian(guardian: GuardianLogin):
+    # Connection으로 부터 Cursor 생성
+    conn = connect()
+    curs = conn.cursor()
+
+    # SQL 문장
+    try:
+        sql = """
+                SELECT count(guardian_id), student_id, guardian_name
+                FROM guardian
+                WHERE guardian_email=%s AND guardian_password=%s
+                """
+        curs.execute(sql, ( guardian.guardian_email, guardian.guardian_password ))
+        conn.commit()
+        result = curs.fetchone()
+        conn.close()
+        if result and result[0] == 1:
+            return [{'student_id' : result[1], 'guardian_name' : result[2],}]
+        else:
+            return {'result' : 'Fail'}
+    except Exception as e:
+        print('Error:', e)
+        return {'result' : 'Error'}
+        # >>>>> student 테이블 , 보호자 로그인 확인용

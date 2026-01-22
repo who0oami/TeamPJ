@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:teacher/app_keys.dart';
+import 'package:teacher/vm/sanghyun/chatting_provider.dart';
 
 // --- [Providers] ---
 
@@ -66,29 +65,22 @@ final categoryProvider = FutureProvider<Map<int, String>>((ref) async {
   }
 });
 
-// 2. 'atti' 데이터베이스 인스턴스 전용 컬렉션 참조
-final chattingCollectionProvider = Provider<CollectionReference<Map<String, dynamic>>>(
-  (ref) => FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'atti',
-  ).collection('chatting'),
-);
-
 // 2-1. guardian_id 기준 최신 채팅의 category_id 로더 (Firebase)
-final latestCategoryIdProvider = FutureProvider.family<int?, int>((ref, guardianId) async {
+final latestCategoryIdProvider = StreamProvider.family<int?, int>((ref, guardianId) {
   final col = ref.watch(chattingCollectionProvider);
-  final snap = await col
+  return col
       .where('guardian_id', isEqualTo: guardianId)
       .orderBy('chatting_date', descending: true)
       .limit(1)
-      .get();
-
-  if (snap.docs.isEmpty) return null;
-  final data = snap.docs.first.data() as Map<String, dynamic>;
-  final id = data['category_id'];
-  if (id is int) return id;
-  if (id == null) return null;
-  return int.tryParse(id.toString());
+      .snapshots()
+      .map((snap) {
+        if (snap.docs.isEmpty) return null;
+        final data = snap.docs.first.data() as Map<String, dynamic>;
+        final id = data['category_id'];
+        if (id is int) return id;
+        if (id == null) return null;
+        return int.tryParse(id.toString());
+      });
 });
 
 // 3. 현재 선택된 문의 대상 정보
@@ -112,7 +104,6 @@ final chatStreamProvider = StreamProvider.autoDispose((ref) {
             DateTime date = (d['chatting_date'] is Timestamp) 
                 ? (d['chatting_date'] as Timestamp).toDate() 
                 : DateTime.now();
-
             final String contents =
                 (d['chatting_contents'] ?? d['chatting_content'] ?? '').toString();
             final String imageUrl = (d['chatting_image'] ?? '').toString();
@@ -154,7 +145,23 @@ class TeacherChatting extends ConsumerWidget {
     return Column(
       children: [
         const SizedBox(height: 60),
-        const Text('문의 내역', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('문의 내역', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                ref.invalidate(chatTargetProvider);
+                ref.invalidate(categoryProvider);
+                ref.invalidate(selectedInquiryProvider);
+                ref.invalidate(chatStreamProvider);
+              },
+              icon: const Icon(Icons.refresh),
+              tooltip: '새로고침',
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
         Expanded(
           child: listAsync.when(
@@ -172,7 +179,6 @@ class TeacherChatting extends ConsumerWidget {
                 final categoryIdAsync = guardianId == null
                     ? const AsyncValue<int?>.data(null)
                     : ref.watch(latestCategoryIdProvider(guardianId));
-
                 Uint8List? img;
                 if (item['student_image'] != null) img = base64Decode(item['student_image']);
 
@@ -226,6 +232,9 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
   static const int _maxSendAttempts = 3;
+  int? _lastGuardianId;
+  bool _didInitialScroll = false;
+  bool _wasCurrentRoute = true;
 
   @override
   void dispose() {
@@ -239,7 +248,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
       );
@@ -250,11 +259,22 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     // [Codex] Use global messenger to avoid missing context issues.
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 1),
+        ),
+      );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 1),
+      ),
+    );
   }
+
 
   void _send() async {
     final inquiry = ref.read(selectedInquiryProvider);
@@ -385,6 +405,20 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     final chatData = ref.watch(chatStreamProvider);
 
     if (inquiry == null) return const Center(child: Text('문의를 선택해주세요.'));
+    final int? guardianId = int.tryParse(inquiry['guardian_id'].toString());
+    if (guardianId != null && guardianId != _lastGuardianId) {
+      _lastGuardianId = guardianId;
+      _didInitialScroll = false;
+      _scrollToBottom();
+    }
+    final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+    if (isCurrentRoute && !_wasCurrentRoute) {
+      _wasCurrentRoute = true;
+      _didInitialScroll = false;
+      _scrollToBottom();
+    } else if (!isCurrentRoute && _wasCurrentRoute) {
+      _wasCurrentRoute = false;
+    }
 
     return Column(
       children: [
@@ -396,20 +430,28 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
         const Divider(height: 1),
         Expanded(
           child: chatData.when(
-            data: (msgs) => ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(20),
-              itemCount: msgs.length,
-              itemBuilder: (ctx, idx) {
-                final m = msgs[idx];
-                return _buildBubble(
-                  m['contents'],
-                  m['imageUrl'],
-                  m['date'],
-                  m['isTeacher'],
-                );
-              },
-            ),
+            data: (msgs) {
+              if (!_didInitialScroll && msgs.isNotEmpty) {
+                _didInitialScroll = true;
+                _scrollToBottom();
+              }
+              final reversedMsgs = msgs.reversed.toList();
+              return ListView.builder(
+                controller: _scrollController,
+                reverse: true,
+                padding: const EdgeInsets.all(20),
+                itemCount: reversedMsgs.length,
+                itemBuilder: (ctx, idx) {
+                  final m = reversedMsgs[idx];
+                  return _buildBubble(
+                    m['contents'],
+                    m['imageUrl'],
+                    m['date'],
+                    m['isTeacher'],
+                  );
+                },
+              );
+            },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, s) => Center(child: Text('에러: $e')),
           ),

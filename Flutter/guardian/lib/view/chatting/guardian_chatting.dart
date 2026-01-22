@@ -70,6 +70,14 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
   bool _didInitialScroll = false;
+  bool _wasCurrentRoute = true;
+  late int _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategory = widget.categoryId;
+  }
 
   @override
   void dispose() {
@@ -83,7 +91,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
       );
@@ -127,7 +135,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
       debugPrint('⏳ Firebase 저장 시도');
       final doc = await col
           .add({
-        'category_id': widget.categoryId,
+        'category_id': _selectedCategory,
         'chatting_contents': safeText,
         'chatting_content': safeText,
         'chatting_date': FieldValue.serverTimestamp(),
@@ -187,6 +195,14 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
   @override
   Widget build(BuildContext context) {
     final guardianAsync = ref.watch(guardianNotifierProvider);
+    final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+    if (isCurrentRoute && !_wasCurrentRoute) {
+      _wasCurrentRoute = true;
+      _didInitialScroll = false;
+      _scrollToBottom();
+    } else if (!isCurrentRoute && _wasCurrentRoute) {
+      _wasCurrentRoute = false;
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -194,6 +210,31 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
         title: const Text('선생님과의 채팅'),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          const Center(
+            child: Text(
+              '주제 선택',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 8),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _selectedCategory,
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('출결')),
+                DropdownMenuItem(value: 2, child: Text('급식')),
+                DropdownMenuItem(value: 3, child: Text('결석문의')),
+                DropdownMenuItem(value: 4, child: Text('개인상담')),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _selectedCategory = value);
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
       body: guardianAsync.when(
         data: (guardians) {
@@ -221,12 +262,14 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
                           _didInitialScroll = true;
                           _scrollToBottom();
                         }
+                        final reversedMsgs = msgs.reversed.toList();
                         return ListView.builder(
                           controller: _scrollController,
+                          reverse: true,
                           padding: const EdgeInsets.all(20),
-                          itemCount: msgs.length,
+                          itemCount: reversedMsgs.length,
                           itemBuilder: (ctx, idx) {
-                            final m = msgs[idx];
+                            final m = reversedMsgs[idx];
                             return _buildBubble(
                               m['contents'],
                               m['imageUrl'],

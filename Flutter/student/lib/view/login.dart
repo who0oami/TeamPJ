@@ -52,7 +52,6 @@ class _LoginState extends ConsumerState<Login> {
   void dispose() {
     phoneController.dispose();
     pwController.dispose();
-    box.erase();
     super.dispose();
   }
 
@@ -171,8 +170,8 @@ void checkLogin() async {
     final result = await studentNotifier.loginStudent(phone, pw);
     //결과값이 OK
     if (result != 'FAIL') {
-      // box.write('p_userid', result);
-      print("저장된 ID: ${box.read('p_userid')}"); // 확인용 지울 예정입니다
+    phoneController.clear();
+    pwController.clear();
       // 성공 시 다이얼로그
       Message.dialog(
         context,
@@ -202,4 +201,3 @@ void checkLogin() async {
     pwController.clear();
   }
 } // class
-

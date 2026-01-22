@@ -18,10 +18,12 @@ Author : Chansol, Park
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:student/view/restitutor/weather/weather.dart';
 import 'package:student/vm/restitutor/attendance_provider.dart';
 import 'package:student/vm/sanghyun/student_provider.dart';
+import 'package:student/view/login.dart';
 // [Codex] Use student Firebase providers for timetable/lunch/schedule data.
 import 'package:student/vm/sion/lunch_provider.dart';
 import 'package:student/vm/sion/schedule_provider.dart';
@@ -41,6 +43,22 @@ final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
 // [Codex] Normalize calendar dates for schedule lookup.
 DateTime _onlyDate(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
+int _readStudentId() {
+  final box = GetStorage();
+  dynamic raw = box.read('p_userid');
+  if (raw is String && raw.isEmpty) {
+    raw = null;
+  }
+  raw ??= box.read('student_id');
+  if (raw is String && raw.isEmpty) {
+    raw = null;
+  }
+  debugPrint('GetStorage student id raw: $raw');
+  if (raw is int) return raw;
+  if (raw is String) return int.tryParse(raw) ?? 1;
+  return 1;
+}
+
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({super.key});
 
@@ -54,7 +72,8 @@ class _MainPageState extends ConsumerState<MainPage> {
     final selectedDay = ref.watch(selectedDayProvider);
     final focusedDay = ref.watch(focusedDayProvider);
     final scheduleMap = ref.watch(scheduleMapProvider);
-    final studentAsync = ref.watch(studentFutureProvider);
+    final studentId = _readStudentId();
+    final studentAsync = ref.watch(studentFutureProvider(studentId));
     final attendAsync = ref.watch(attendProvider);
     final timetableAsync = ref.watch(timetableListProvider);
     final lunchmenuAsync = ref.watch(lunchmenuListProvider);
@@ -150,6 +169,26 @@ class _MainPageState extends ConsumerState<MainPage> {
                   leading: const Icon(Icons.settings),
                   title: const Text('설정'),
                   onTap: () {},
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('로그아웃'),
+                  onTap: () async {
+                    final box = GetStorage();
+                    await box.erase();
+                    ref.invalidate(studentFutureProvider);
+                    ref.invalidate(attendProvider);
+                    ref.invalidate(timetableListProvider);
+                    ref.invalidate(lunchmenuListProvider);
+                    ref.invalidate(scheduleMapProvider);
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Login()),
+                        (route) => false,
+                      );
+                    }
+                  },
                 ),
               ],
             );
@@ -571,9 +610,10 @@ class _AttendancePopupGateState extends ConsumerState<AttendancePopupGate> {
                         height: 52,
                         child: ElevatedButton(
                           onPressed: () async {
+                            final studentId = _readStudentId();
                             await ref
                                 .read(attendProvider.notifier)
-                                .attendCheck(studentId: 1);
+                                .attendCheck(studentId: studentId);
 
                             if (context.mounted) Navigator.pop(context);
                           },

@@ -21,10 +21,18 @@ class ImageNotifier extends Notifier<ImageState> {
   @override
   ImageState build() => ImageState();
 
+  // 이미지 여러 장 업로드
   Future<void> pickImagesFromGallery() async {
     final picked = await picker.pickMultiImage(imageQuality: 80);
     if (picked.isEmpty) return;
     state = state.copyWith(files: [...state.files, ...picked]);
+  }
+
+  // 이미지 한 장 업로드
+  Future<void> pickSingleImageFromGallery() async {
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked == null) return;
+    state = state.copyWith(files: [picked]);
   }
 
   void removeAt(int index) {

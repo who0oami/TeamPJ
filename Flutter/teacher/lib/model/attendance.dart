@@ -12,6 +12,8 @@ class Attendance {
   final int attendance_grade;
   final int attendance_class;
   final int student_id;
+  final String? student_name;         // JOIN 결과
+  final String? attendance_content;   // 🔥 NEW: 결석/지각 사유 등
 
   Attendance({
     this.attendance_id,
@@ -34,6 +36,8 @@ class Attendance {
       attendance_grade: json['attendance_grade'] ?? 1,
       attendance_class: json['attendance_class'] ?? 1,
       student_id: json['student_id'],
+      student_name: json['student_name'],
+      attendance_content: json['attendance_content'], // ✅ 사유 파싱
     );
   }
 

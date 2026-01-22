@@ -12,8 +12,11 @@ Author : 이상현
 */
 
 // 학생 정보를 서버에서 가져오는 Provider
-final studentFutureProvider = FutureProvider<Student>((ref) async {
-  final url = 'http://${config.getForwardIP()}:${config.forwardport}/sanghyun/student/1';
+final studentFutureProvider = FutureProvider.family<Student, int>((
+  ref,
+  studentId,
+) async {
+  final url = 'http://${config.getForwardIP()}:${config.forwardport}/sanghyun/student/$studentId';
   final response = await http.get(Uri.parse(url));
 
   if (response.statusCode == 200) {

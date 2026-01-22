@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:student/util/config.dart' as config;
 
@@ -23,10 +24,26 @@ class AttendProvider extends AsyncNotifier<bool> {
   String get _baseUrl =>
       'http://${config.getSafeForwardIp()}:${config.forwardport}/restitutor';
 
+  int _readStudentId() {
+    final box = GetStorage();
+    dynamic raw = box.read('p_userid');
+    if (raw is String && raw.isEmpty) {
+      raw = null;
+    }
+    raw ??= box.read('student_id');
+    if (raw is String && raw.isEmpty) {
+      raw = null;
+    }
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw) ?? 1;
+    return 1;
+  }
+
   @override
   Future<bool> build() async {
-    await attendInit(studentId: 1);
-    return await attendStatus(studentId: 1);
+    final studentId = _readStudentId();
+    await attendInit(studentId: studentId);
+    return await attendStatus(studentId: studentId);
   }
 
   Future<void> attendInit({required int studentId}) async {

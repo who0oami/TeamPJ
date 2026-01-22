@@ -6,7 +6,7 @@ Author : 상현
 
 class Attendance {
   final int? attendance_id;
-  final String attendance_star_time;
+  final String attendance_start_time;
   final String? attendance_end_time;
   final String attendance_status;
   final int attendance_grade;
@@ -17,7 +17,7 @@ class Attendance {
 
   Attendance({
     this.attendance_id,
-    required this.attendance_star_time,
+    required this.attendance_start_time,
     this.attendance_end_time,
     required this.attendance_status,
     required this.attendance_grade,
@@ -30,7 +30,7 @@ class Attendance {
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
       attendance_id: json['attendance_id'],
-      attendance_star_time: json['attendance_start_time'],
+      attendance_start_time: json['attendance_start_time'],
       attendance_end_time: json['attendance_end_time'],
       attendance_status: json['attendance_status'],
       attendance_grade: json['attendance_grade'] ?? 1,
@@ -44,7 +44,7 @@ class Attendance {
   Map<String, dynamic> toJson() {
     return {
       'attendance_id': attendance_id,
-      'attendance_start_time': attendance_star_time,
+      'attendance_start_time': attendance_start_time,
       'attendance_end_time': attendance_end_time,
       'attendance_status': attendance_status,
       'attendance_grade': attendance_grade,

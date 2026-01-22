@@ -1,3 +1,13 @@
+/* 
+Description : 메인 페이지 구성 및 데이터 연동
+  - 학생 프로필/드로워 UI 구성 및 로그아웃 동작 추가
+  - 캘린더/일정/시간표/급식 위젯 구성
+  - 출석 체크 팝업 및 긴급 호출 버튼 구성
+  - GetStorage 기반 학생 ID 연동
+Date : 2026-1-22
+Author : 이상현
+*/
+
 /*
 Description : 화면구성 작업
 1. 학생 데이터만 연결해서 로그인 한 학생 데이터 임시로 1번으로 지정 해서 작업
@@ -18,10 +28,13 @@ Author : Chansol, Park
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:student/view/restitutor/attend_student.dart';
 import 'package:student/view/restitutor/weather/weather.dart';
 import 'package:student/vm/restitutor/attendance_provider.dart';
 import 'package:student/vm/sanghyun/student_provider.dart';
+import 'package:student/view/login.dart';
 // [Codex] Use student Firebase providers for timetable/lunch/schedule data.
 import 'package:student/vm/sion/lunch_provider.dart';
 import 'package:student/vm/sion/schedule_provider.dart';
@@ -41,6 +54,22 @@ final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
 // [Codex] Normalize calendar dates for schedule lookup.
 DateTime _onlyDate(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
+int _readStudentId() {
+  final box = GetStorage();
+  dynamic raw = box.read('p_userid');
+  if (raw is String && raw.isEmpty) {
+    raw = null;
+  }
+  raw ??= box.read('student_id');
+  if (raw is String && raw.isEmpty) {
+    raw = null;
+  }
+  debugPrint('GetStorage student id raw: $raw');
+  if (raw is int) return raw;
+  if (raw is String) return int.tryParse(raw) ?? 1;
+  return 1;
+}
+
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({super.key});
 
@@ -54,7 +83,8 @@ class _MainPageState extends ConsumerState<MainPage> {
     final selectedDay = ref.watch(selectedDayProvider);
     final focusedDay = ref.watch(focusedDayProvider);
     final scheduleMap = ref.watch(scheduleMapProvider);
-    final studentAsync = ref.watch(studentFutureProvider);
+    final studentId = _readStudentId();
+    final studentAsync = ref.watch(studentFutureProvider(studentId));
     final attendAsync = ref.watch(attendProvider);
     final timetableAsync = ref.watch(timetableListProvider);
     final lunchmenuAsync = ref.watch(lunchmenuListProvider);
@@ -71,7 +101,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ATTI'),
+        title: Image.asset('images/atti_logo.png',width: 70,),
         centerTitle: true,
         backgroundColor: Acolor.primaryColor,
         foregroundColor: Acolor.onPrimaryColor,
@@ -103,6 +133,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   // --- UI 구성 위젯들 ---
 
+  // 학생 정보 드로워 UI.
   Widget _buildStudentDrawer(AsyncValue<Student> studentAsync) {
     return Drawer(
       child: SafeArea(
@@ -151,6 +182,26 @@ class _MainPageState extends ConsumerState<MainPage> {
                   title: const Text('설정'),
                   onTap: () {},
                 ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('로그아웃'),
+                  onTap: () async {
+                    final box = GetStorage();
+                    await box.erase();
+                    ref.invalidate(studentFutureProvider);
+                    ref.invalidate(attendProvider);
+                    ref.invalidate(timetableListProvider);
+                    ref.invalidate(lunchmenuListProvider);
+                    ref.invalidate(scheduleMapProvider);
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Login()),
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
               ],
             );
           },
@@ -159,6 +210,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 날짜/오늘 일정 헤더 UI.
   Widget _buildDateHeader(String date, String message) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -186,6 +238,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 학생 프로필 카드 UI.
   Widget _buildProfileCard(AsyncValue<Student> studentAsync) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -258,6 +311,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 섹션 타이틀 공통 UI.
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
@@ -275,6 +329,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     ); //뷁
   }
 
+  // 일정 표시 캘린더 UI.
   Widget _buildCalendar(
     WidgetRef ref,
     DateTime? selectedDay,
@@ -328,6 +383,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 시간표 섹션 로딩/에러/데이터 분기 UI.
   Widget _buildTimetableSection(AsyncValue<List<Timetable>> timetableAsync) {
     return timetableAsync.when(
       loading: () => const Padding(
@@ -355,6 +411,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   }
 
   // [Codex] Render Firestore timetable model.
+  // 시간표 테이블 UI.
   Widget _buildTimetable(Timetable timetable) {
     final Map<String, List<String>> table = timetable.timetable_table;
     const days = ['월', '화', '수', '목', '금'];
@@ -394,6 +451,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 시간표 셀 UI.
   Widget _cell(String text, {bool isHeader = false}) {
     return Container(
       height: 48,
@@ -408,6 +466,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 급식 섹션 로딩/에러/데이터 분기 UI.
   Widget _buildMealSection(AsyncValue<List<LunchMenu>> lunchAsync) {
     return lunchAsync.when(
       loading: () => const Padding(
@@ -431,6 +490,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   }
 
   // [Codex] Render lunch menu grid from Firestore data.
+  // 급식 카드 그리드 UI.
   Widget _buildMealGrid(List<LunchMenu> menus) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -497,6 +557,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 긴급 호출 버튼 UI.
   Widget _buildEmergencyButton() {
     // 긴급호출 버튼 위젯
     return SizedBox(
@@ -571,11 +632,7 @@ class _AttendancePopupGateState extends ConsumerState<AttendancePopupGate> {
                         height: 52,
                         child: ElevatedButton(
                           onPressed: () async {
-                            await ref
-                                .read(attendProvider.notifier)
-                                .attendCheck(studentId: 1);
-
-                            if (context.mounted) Navigator.pop(context);
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => AttendStudent(),));
                           },
                           child: const Text("학교왔어요 😊"),
                         ),

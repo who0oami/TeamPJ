@@ -26,7 +26,7 @@ class AttendanceDetailPage extends ConsumerWidget {
           final studentName = attendances.first.student_name ?? '학생';
 
           final filtered = attendances.where((att) {
-            final d = DateTime.parse(att.attendance_star_time);
+            final d = DateTime.parse(att.attendance_start_time);
             return d.year == selectedMonth.year && d.month == selectedMonth.month;
           }).toList();
 
@@ -102,7 +102,7 @@ class AttendanceDetailPage extends ConsumerWidget {
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                             final att = filtered[index];
-                            final date = DateFormat('M/d').format(DateTime.parse(att.attendance_star_time));
+                            final date = DateFormat('M/d').format(DateTime.parse(att.attendance_start_time));
                             Color statusColor;
                             switch (att.attendance_status) {
                               case '출석':

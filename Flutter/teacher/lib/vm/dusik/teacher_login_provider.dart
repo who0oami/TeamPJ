@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:teacher/model/teacher.dart';
 
@@ -16,6 +17,8 @@ class TeacherLoginNotifier extends AsyncNotifier<List<Teacher>>{
   List<Teacher> teachers = [];
   bool isLoading = false;
   String? error;
+  final box = GetStorage(); // GetStorage 인스턴스 생성
+
 
 
   Future<List<Teacher>> fetchTeachers() async{ 
@@ -71,8 +74,10 @@ class TeacherLoginNotifier extends AsyncNotifier<List<Teacher>>{
     return 'FAIL';
   } 
   if (data is List && data.isNotEmpty) {
-    return data[0]['teacher_id'].toString();
-    
+    final teacherId = data[0]['teacher_id'].toString();
+    await box.write('teacher_id', teacherId);
+    print("저장된 ID: ${box.read('teacher_id')}"); // 확인용 지울 예정입니다
+    return teacherId;
   }
   return 'FAIL';
 }

@@ -71,11 +71,11 @@ class _TeacherLoginState extends ConsumerState<TeacherLogin> {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Image.asset(
-                "images/head_book.png",
+                "images/atti_logo.png",
                 width: 150,
                 ),
             ),
-            Text("학생 정보 입력"),
+            Text("선생님 정보 입력"),
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -170,8 +170,8 @@ void checkLogin() async {
     final result = await teacherNotifier.loginTeacher(email,pw);
     //결과값이 OK
     if (result != 'FAIL') {
-      // box.write('p_userid', result);
-      print("저장된 ID: ${box.read('p_userid')}"); // 확인용 지울 예정입니다
+      emailController.clear();
+      pwController.clear();
       // 성공 시 다이얼로그
       Message.dialog(
         context,
@@ -179,7 +179,7 @@ void checkLogin() async {
         '오늘도 즐겁게 공부해보아요',
         Colors.white,
       );
-      saveStorage(result);
+      // saveStorage(result);
       // 페이지 이동
       Navigator.push(
       context,
@@ -195,10 +195,10 @@ void checkLogin() async {
       );
     }
   }
-  void saveStorage(String teacherId){
-    box.write('p_userid', teacherId);
-    emailController.clear();
-    pwController.clear();
-  }
+  // void saveStorage(String teacherId){
+  //   box.write('p_userid', teacherId);
+  //   emailController.clear();
+  //   pwController.clear();
+  // }
 } // class
 

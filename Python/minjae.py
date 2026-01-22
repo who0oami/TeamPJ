@@ -10,7 +10,7 @@ router = APIRouter()
 def connect():
     return pymysql.connect(
         host=config.hostip,
-        port=config.hostport,
+        port=config.hostPort,
         user=config.hostuser,
         password=config.hostpassword,
         database=config.hostdatabase,

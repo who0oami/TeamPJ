@@ -179,7 +179,7 @@ void checkLogin() async {
         '오늘도 즐겁게 공부해보아요',
         Colors.white,
       );
-      saveStorage(result);
+      // saveStorage(result);
       // 페이지 이동
       Navigator.push(
       context,
@@ -195,9 +195,9 @@ void checkLogin() async {
       );
     }
   }
-  void saveStorage(String studentId){
-    box.write('p_userid', studentId);
-    phoneController.clear();
-    pwController.clear();
-  }
+  // void saveStorage(String studentId){
+  //   box.write('p_userid', studentId);
+  //   phoneController.clear();
+  //   pwController.clear();
+  // }
 } // class

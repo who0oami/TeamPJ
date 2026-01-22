@@ -23,7 +23,12 @@ final homeworkListProvider = StreamProvider<List<Homework>>(
   (ref) {
     final col = ref.watch(homeworkCollectionProvider);
     return col.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Homework.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+      final list = snapshot.docs
+      .map((doc) => Homework.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+
+      list.sort((a, b) => b.homework_insertdate.compareTo(a.homework_insertdate));
+
+      return list;
     });
   },
 );

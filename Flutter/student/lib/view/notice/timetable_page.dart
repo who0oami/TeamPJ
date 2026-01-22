@@ -1,8 +1,10 @@
 /* 
-Description : schedule page - 일단 페이지만 구성!
-Date : 2026-1-20
+Description : schedule page - 색깔 바꿈!
+Date : 2026-1-22
 Author : 정시온
 */
+
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +24,7 @@ class _TimetableState extends ConsumerState<TimetablePage> {
     final timetableAsync = ref.watch(timetableListProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // 밝은 회색 배경으로 카드 부각
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255), // 밝은 회색 배경으로 카드 부각
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,6 +130,14 @@ class _TimetableState extends ConsumerState<TimetablePage> {
     if (!isHeader && !isPeriod && text.isNotEmpty) {
       if (text.contains('국어')) bgColor = const Color(0xFFFFE0E0);
       else if (text.contains('수학')) bgColor = const Color(0xFFE0F0FF);
+      else if(text.contains('사회')) bgColor =  const Color.fromARGB(255, 255, 255, 205);
+      else if(text.contains('과학')) bgColor =  const Color.fromARGB(255, 211, 249, 255);
+      else if(text.contains('체육')) bgColor =  const Color.fromARGB(255, 251, 238, 255);
+      else if(text.contains('미술')) bgColor =  const Color.fromARGB(255, 211, 255, 248);
+      else if(text.contains('영어')) bgColor =  const Color.fromARGB(255, 255, 242, 224);
+      else if(text.contains('음악')) bgColor =  const Color.fromARGB(255, 227, 243, 255);
+      else if(text.contains('도덕')) bgColor =  const Color.fromARGB(255, 211, 255, 248);
+
       else bgColor = const Color(0xFFF0F0F0);
     }
 

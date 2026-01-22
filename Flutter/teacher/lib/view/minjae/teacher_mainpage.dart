@@ -1,7 +1,7 @@
 /*
-Description : teacher 메인페이지구성 (Decorated UI + Drawer DB 연동)
+Description : teacher 메인페이지구성 (Decorated UI + Drawer DB 연동 + Calendar Schedule)
 Date : 2026-1-18
-Author : 민재
+Author : 민재 (calendar + schedule connected)
 */
 
 import 'package:flutter/material.dart';
@@ -10,10 +10,12 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:teacher/util/acolor.dart';
 import 'package:teacher/vm/minjae/teacher_riverpod.dart';
 import 'package:teacher/vm/minjae/meal_riverpod.dart';
+import 'package:teacher/vm/minjae/timetable_riverpod.dart';
+import 'package:teacher/vm/minjae/schedule_riverpod.dart'; // ✅ 추가
+import 'package:teacher/model/timetable.dart';
+import 'package:teacher/model/schedule.dart'; // ✅ 추가
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:teacher/model/timetable.dart';
-import 'package:teacher/vm/minjae/timetable_riverpod.dart';
 
 final selectedDayProvider =
     StateProvider<DateTime?>((ref) => DateTime.now());
@@ -55,8 +57,10 @@ class _TeacherMainPageState
             return teacherAsync.when(
               data: (teachers) {
                 if (teachers.isEmpty) {
-                  return const SizedBox();
+                  return const Center(
+                      child: Text('선생님 정보 없음'));
                 }
+
                 final t = teachers.first;
 
                 return ListView(
@@ -75,7 +79,6 @@ class _TeacherMainPageState
                         color: Colors.deepPurple,
                       ),
                     ),
-
                     _drawerItems(context),
                   ],
                 );
@@ -106,8 +109,16 @@ class _TeacherMainPageState
       /// ================= Body =================
       body: teacherAsync.when(
         data: (teachers) {
+          if (teachers.isEmpty) {
+            return const Center(child: Text('선생님 데이터 없음'));
+          }
+
           return timetableAsync.when(
             data: (timetables) {
+              if (timetables.isEmpty) {
+                return const Center(child: Text('시간표 데이터 없음'));
+              }
+
               return lunchmenuAsync.when(
                 data: (menus) {
                   final t = teachers.first;
@@ -138,8 +149,7 @@ class _TeacherMainPageState
                             children: [
                               CircleAvatar(
                                 radius: 36,
-                                backgroundImage:
-                                    NetworkImage(
+                                backgroundImage: NetworkImage(
                                   "http://10.0.2.2:8000/minjae/view/${t.teacher_id}",
                                 ),
                               ),
@@ -147,14 +157,12 @@ class _TeacherMainPageState
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
+                                      CrossAxisAlignment.start,
                                   children: [
                                     const Text(
                                       "두식초등학교 · 1학년 1반",
                                       style: TextStyle(
-                                          color:
-                                              Colors.white70),
+                                          color: Colors.white70),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
@@ -181,8 +189,10 @@ class _TeacherMainPageState
 
                       const SizedBox(height: 12),
 
-                      _buildCalendar(
-                          ref, selectedDay, focusedDay),
+                      _buildCalendar(ref, selectedDay, focusedDay),
+
+                      /// ✅ 날짜별 일정 리스트
+                      _buildScheduleList(ref),
 
                       const SizedBox(height: 16),
 
@@ -192,15 +202,13 @@ class _TeacherMainPageState
                         child: SizedBox(
                           height: 56,
                           child: ElevatedButton.icon(
-                            style:
-                                ElevatedButton.styleFrom(
+                            style: ElevatedButton.styleFrom(
                               backgroundColor:
                                   Colors.redAccent,
                               shape:
                                   RoundedRectangleBorder(
                                 borderRadius:
-                                    BorderRadius.circular(
-                                        30),
+                                    BorderRadius.circular(30),
                               ),
                             ),
                             onPressed: () {},
@@ -252,66 +260,54 @@ class _TeacherMainPageState
   /// ================= Drawer Items =================
   Widget _drawerItems(BuildContext context) {
     return Column(
-      children: [
+      children: const [
         ListTile(
-          leading: const Icon(Icons.lock_outline),
-          title: const Text("비밀번호 수정"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.lock_outline),
+          title: Text("비밀번호 수정"),
         ),
-        const Divider(),
+        Divider(),
         ListTile(
-          leading: const Icon(Icons.how_to_reg),
-          title: const Text("학생 출결 조회"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.how_to_reg),
+          title: Text("학생 출결 조회"),
         ),
         ListTile(
-          leading: const Icon(Icons.edit_calendar),
-          title: const Text("학생 출결 수정"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.edit_calendar),
+          title: Text("학생 출결 수정"),
         ),
-        const Divider(),
+        Divider(),
         ListTile(
-          leading: const Icon(Icons.schedule),
-          title: const Text("시간표 조회"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.schedule),
+          title: Text("시간표 조회"),
         ),
         ListTile(
-          leading: const Icon(Icons.edit_note),
-          title: const Text("시간표 수정"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.edit_note),
+          title: Text("시간표 수정"),
         ),
-        const Divider(),
+        Divider(),
         ListTile(
-          leading: const Icon(Icons.restaurant_menu),
-          title: const Text("급식표 조회"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.restaurant_menu),
+          title: Text("급식표 조회"),
         ),
         ListTile(
-          leading: const Icon(Icons.edit),
-          title: const Text("급식표 수정"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.edit),
+          title: Text("급식표 수정"),
         ),
-        const Divider(),
+        Divider(),
         ListTile(
-          leading: const Icon(Icons.campaign),
-          title: const Text("공지 조회"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.campaign),
+          title: Text("공지 조회"),
         ),
         ListTile(
-          leading:
-              const Icon(Icons.edit_notifications),
-          title: const Text("공지 작성 / 수정"),
-          onTap: () => Navigator.pop(context),
+          leading: Icon(Icons.edit_notifications),
+          title: Text("공지 작성 / 수정"),
         ),
-        const Divider(),
+        Divider(),
         ListTile(
-          leading: const Icon(Icons.logout,
-              color: Colors.red),
-          title: const Text(
+          leading: Icon(Icons.logout, color: Colors.red),
+          title: Text(
             "로그아웃",
             style: TextStyle(color: Colors.red),
           ),
-          onTap: () => Navigator.pop(context),
         ),
       ],
     );
@@ -332,9 +328,12 @@ class _TeacherMainPageState
     );
   }
 
-  // ================= Calendar =================
+  // ================= Calendar (with schedule) =================
   Widget _buildCalendar(
       WidgetRef ref, DateTime? selectedDay, DateTime focusedDay) {
+
+    final scheduleMap = ref.watch(scheduleMapProvider);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -360,8 +359,52 @@ class _TeacherMainPageState
             ref.read(focusedDayProvider.notifier)
                 .state = newFocusedDay;
           },
+
+          /// ✅ 일정 마커 연결
+          eventLoader: (day) {
+            final key = DateTime(day.year, day.month, day.day);
+            return scheduleMap[key] ?? [];
+          },
         ),
       ),
+    );
+  }
+
+  // ================= Schedule List =================
+  Widget _buildScheduleList(WidgetRef ref) {
+    final schedules = ref.watch(scheduleMapProvider);
+    final selectedDate = ref.watch(selectedDayProvider);
+
+    final key = DateTime(
+      selectedDate!.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+
+    final todaySchedules = schedules[key] ?? [];
+
+    if (todaySchedules.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text(
+          "오늘은 등록된 일정이 없습니다",
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Column(
+      children: todaySchedules.map((Schedule s) {
+        final timeStr =
+            DateFormat('HH:mm').format(s.schedule_startdate);
+
+        return ListTile(
+          leading: const Icon(Icons.event),
+          title: Text(s.schedule_title),
+          subtitle:
+              Text("$timeStr - ${s.schedule_contents}"),
+        );
+      }).toList(),
     );
   }
 
@@ -373,8 +416,7 @@ class _TeacherMainPageState
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Table(
-        border: TableBorder.all(
-            color: Colors.black),
+        border: TableBorder.all(color: Colors.black),
         children: [
           TableRow(
             children: [
@@ -421,6 +463,13 @@ class _TeacherMainPageState
 
   // ================= Meal =================
   Widget _buildMealGrid(List menus) {
+    if (menus.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(child: Text('급식 정보 없음')),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: 20),

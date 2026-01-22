@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:get_storage/get_storage.dart';
 import 'package:teacher/model/teacher.dart';
 
 class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
-  final String baseUrl = "http://10.0.2.2:8000"; // Android 에뮬레이터 기준
+  final String baseUrl = "http://10.0.2.2:8000";
+  final box = GetStorage();
 
   @override
   FutureOr<List<Teacher>> build() async {
@@ -14,8 +16,17 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
 
   Future<List<Teacher>> fetchTeacher() async {
     try {
+      final teacherId = box.read('teacher_id');
+
+      if (teacherId == null) {
+        print('⚠️ 저장된 teacher_id 없음');
+        return [];
+      }
+
       final res = await http.get(
-        Uri.parse("$baseUrl/minjae/select/teacher?teacher_id=1"),
+        Uri.parse(
+          "$baseUrl/minjae/select/teacher?teacher_id=$teacherId",
+        ),
       );
 
       if (res.statusCode != 200) {
@@ -23,9 +34,8 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
       }
 
       final data = json.decode(utf8.decode(res.bodyBytes));
-
-      // null 또는 잘못된 타입 처리
       final results = data['results'];
+
       if (results == null || results is! List) {
         return [];
       }
@@ -43,8 +53,7 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
   }
 }
 
-// Provider 등록
 final teacherNotifierProvider =
     AsyncNotifierProvider<TeacherNotifier, List<Teacher>>(
-  () => TeacherNotifier(),
+  TeacherNotifier.new,
 );

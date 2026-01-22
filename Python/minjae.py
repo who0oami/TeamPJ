@@ -135,3 +135,39 @@ async def get_student(student_id: int):
             result['student_image'] = base64.b64encode(result['student_image']).decode('utf-8')
         return result
     return {"error": "Student not found"}
+
+
+
+@router.get("/attendance/select")
+async def select_attendance(student_id: int | None = None):
+    conn = connect()
+    curs = conn.cursor()
+
+    sql = """
+    SELECT
+        a.attendance_id,
+        a.attendance_start_time,
+        a.attendance_end_time,
+        a.attendance_status,
+        a.attendance_grade,
+        a.attendance_class,
+        a.attendance_content,
+        a.student_id,
+        s.student_name
+    FROM attendance a
+    INNER JOIN student s
+        ON a.student_id = s.student_id
+    """
+
+    params = []
+    if student_id:
+        sql += " WHERE a.student_id = %s"
+        params.append(student_id)
+
+    sql += " ORDER BY a.attendance_start_time ASC"
+
+    curs.execute(sql, params)
+    rows = curs.fetchall()
+    conn.close()
+
+    return {"results": rows}

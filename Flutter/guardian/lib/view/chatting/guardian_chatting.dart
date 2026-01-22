@@ -8,9 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:guardian/vm/minjae/guardian_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:guardian/util/acolor.dart';
 
 const int kDefaultGuardianId = 2;
 const int kDefaultStudentId = 2;
+
+final Color _kGuardianMuted =
+    Acolor.appBarBackgroundColor.withOpacity(0.55);
 
 final guardianChatCollectionProvider = Provider<CollectionReference<Map<String, dynamic>>>(
   (ref) => FirebaseFirestore.instanceFor(
@@ -205,35 +209,64 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Acolor.baseBackgroundColor,
       appBar: AppBar(
-        title: const Text('선생님과의 채팅'),
-        backgroundColor: Colors.white,
+        toolbarHeight: 76,
         elevation: 0,
+        backgroundColor: Acolor.onPrimaryColor.withOpacity(0),
+        foregroundColor: Acolor.appBarForegroundColor,
+        title: const Text(
+          '선생님과의 채팅',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            color: Acolor.primaryColor,
+          ),
+        ),
         actions: [
-          const Center(
-            child: Text(
-              '주제 선택',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Acolor.onPrimaryColor.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(18),
             ),
-          ),
-          const SizedBox(width: 8),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedCategory,
-              items: const [
-                DropdownMenuItem(value: 1, child: Text('출결')),
-                DropdownMenuItem(value: 2, child: Text('급식')),
-                DropdownMenuItem(value: 3, child: Text('결석문의')),
-                DropdownMenuItem(value: 4, child: Text('개인상담')),
+            child: Row(
+              children: [
+                Text(
+                  '주제 선택',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Acolor.appBarBackgroundColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _selectedCategory,
+                    dropdownColor: Acolor.onPrimaryColor,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Acolor.appBarBackgroundColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 1, child: Text('출결')),
+                      DropdownMenuItem(value: 2, child: Text('급식')),
+                      DropdownMenuItem(value: 3, child: Text('결석문의')),
+                      DropdownMenuItem(value: 4, child: Text('개인상담')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedCategory = value);
+                    },
+                  ),
+                ),
               ],
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _selectedCategory = value);
-              },
             ),
           ),
-          const SizedBox(width: 12),
         ],
       ),
       body: guardianAsync.when(
@@ -252,49 +285,70 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
               final bool isTablet = constraints.maxWidth >= 900;
               final double maxWidth = isTablet ? 720 : double.infinity;
 
-              final content = Column(
-                children: [
-                  const Divider(height: 1),
-                  Expanded(
-                    child: chatData.when(
-                      data: (msgs) {
-                        if (!_didInitialScroll && msgs.isNotEmpty) {
-                          _didInitialScroll = true;
-                          _scrollToBottom();
-                        }
-                        final reversedMsgs = msgs.reversed.toList();
-                        return ListView.builder(
-                          controller: _scrollController,
-                          reverse: true,
-                          padding: const EdgeInsets.all(20),
-                          itemCount: reversedMsgs.length,
-                          itemBuilder: (ctx, idx) {
-                            final m = reversedMsgs[idx];
-                            return _buildBubble(
-                              m['contents'],
-                              m['imageUrl'],
-                              m['date'],
-                              m['isMe'],
-                            );
-                          },
-                        );
-                      },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, s) => Center(child: Text('에러: $e')),
-                    ),
+          final content = Container(
+            decoration: BoxDecoration(
+              color: Acolor.onPrimaryColor,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Acolor.appBarBackgroundColor.withOpacity(0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                Expanded(
+                  child: chatData.when(
+                    data: (msgs) {
+                      if (!_didInitialScroll && msgs.isNotEmpty) {
+                        _didInitialScroll = true;
+                        _scrollToBottom();
+                      }
+                      final reversedMsgs = msgs.reversed.toList();
+                      return ListView.builder(
+                        controller: _scrollController,
+                        reverse: true,
+                      padding: const EdgeInsets.all(24),
+                      itemCount: reversedMsgs.length,
+                        itemBuilder: (ctx, idx) {
+                          final m = reversedMsgs[idx];
+                          return _buildBubble(
+                            m['contents'],
+                            m['imageUrl'],
+                            m['date'],
+                            m['isMe'],
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, s) => Center(child: Text('에러: $e')),
                   ),
-                  _buildInputBar(guardianId, studentId),
-                ],
-              );
+                ),
+                SafeArea(child: _buildInputBar(guardianId, studentId)),
+              ],
+            ),
+          );
 
-              if (!isTablet) return content;
+              if (!isTablet) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: content,
+                );
+              }
               return Row(
                 children: [
                   SizedBox(
                     width: 320,
                     child: _buildSidebar(context, guardian, guardianId, studentId),
                   ),
-                  const VerticalDivider(width: 1, color: Color(0xFFEEEEEE)),
+                  VerticalDivider(
+                    width: 1,
+                    color: Acolor.secondaryBackgroundColor,
+                  ),
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(
@@ -324,7 +378,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     final String now = DateFormat('yyyy.MM.dd EEE', 'ko_KR').format(DateTime.now());
 
     return Container(
-      color: Colors.white,
+      color: Acolor.onPrimaryColor,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +392,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F8F8),
+              color: Acolor.secondaryBackgroundColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -362,7 +416,10 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
                       const SizedBox(height: 4),
                       Text(
                         'guardian_id: $guardianId / student_id: $studentId',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Acolor.appBarBackgroundColor.withOpacity(0.55),
+                        ),
                       ),
                     ],
                   ),
@@ -373,11 +430,16 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              Icon(Icons.calendar_today,
+                  size: 18,
+                  color: Acolor.appBarBackgroundColor.withOpacity(0.55)),
               const SizedBox(width: 8),
               Text(
                 now,
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Acolor.appBarBackgroundColor.withOpacity(0.55),
+                ),
               ),
             ],
           ),
@@ -387,9 +449,12 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '문의 내용을 남기면 선생님과 실시간으로 대화할 수 있어요.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 12,
+              color: Acolor.appBarBackgroundColor.withOpacity(0.55),
+            ),
           ),
         ],
       ),
@@ -403,6 +468,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     bool isMe,
   ) {
     final String? url = (imageUrl ?? '').trim().isEmpty ? null : imageUrl;
+    final bool isMine = isMe;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -412,14 +478,24 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
           if (!isMe)
             Text(
               DateFormat('a h:mm').format(date),
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(fontSize: 10, color: _kGuardianMuted),
             ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isMe ? const Color(0xFFF7D060) : const Color(0xFFF1F1F1),
-              borderRadius: BorderRadius.circular(12),
+              color: isMine ? Acolor.primaryColor : Acolor.onPrimaryColor,
+              borderRadius: BorderRadius.circular(18),
+              border: isMine
+                  ? null
+                  : Border.all(color: Acolor.secondaryBackgroundColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Acolor.appBarBackgroundColor.withOpacity(0.07),
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -444,7 +520,9 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
                   Text(
                     contents,
                     style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black,
+                      color: isMine
+                          ? Acolor.onPrimaryColor
+                          : Acolor.appBarBackgroundColor,
                       fontSize: 16,
                     ),
                   ),
@@ -456,7 +534,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
           if (isMe)
             Text(
               DateFormat('a h:mm').format(date),
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(fontSize: 10, color: _kGuardianMuted),
             ),
         ],
       ),
@@ -465,31 +543,62 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
 
   Widget _buildInputBar(int guardianId, int studentId) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => _pickAndSendImage(guardianId, studentId),
-            icon: const Icon(Icons.add, color: Color(0xFFF7D060), size: 30),
+          Container(
+            decoration: BoxDecoration(
+              color: Acolor.primaryColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: IconButton(
+              onPressed: () => _pickAndSendImage(guardianId, studentId),
+              icon: Icon(Icons.add,
+                  color: Acolor.appBarForegroundColor, size: 24),
+            ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: _textController,
               decoration: InputDecoration(
                 hintText: '메시지를 입력하세요',
                 filled: true,
-                fillColor: const Color(0xFFF8F8F8),
+                fillColor: Acolor.onPrimaryColor,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide:
+                      BorderSide(color: Acolor.secondaryBackgroundColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide:
+                      BorderSide(color: Acolor.secondaryBackgroundColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide:
+                      BorderSide(color: Acolor.primaryColor, width: 1.2),
                 ),
               ),
               onSubmitted: (_) => _sendText(guardianId, studentId),
             ),
           ),
-          IconButton(
-            onPressed: () => _sendText(guardianId, studentId),
-            icon: const Icon(Icons.send, color: Color(0xFFF7D060), size: 30),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Acolor.appBarBackgroundColor,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: IconButton(
+              onPressed: () => _sendText(guardianId, studentId),
+              icon: Icon(Icons.send,
+                  color: Acolor.appBarForegroundColor, size: 22),
+            ),
           ),
         ],
       ),

@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:teacher/app_keys.dart';
 import 'package:teacher/vm/sanghyun/chatting_provider.dart';
+import 'package:teacher/util/acolor.dart';
 
 // --- [Providers] ---
 
@@ -118,21 +119,27 @@ final chatStreamProvider = StreamProvider.autoDispose((ref) {
 
 // --- [Main View] ---
 
+final Color _kTeacherMuted =
+    Acolor.appBarBackgroundColor.withOpacity(0.55);
+
 class TeacherChatting extends ConsumerWidget {
   const TeacherChatting({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Row(
-        children: [
-          // 왼쪽 목록 (MySQL 데이터)
-          SizedBox(width: 400, child: _buildSidebar(ref)),
-          const VerticalDivider(width: 1, color: Color(0xFFEEEEEE)),
-          // 오른쪽 채팅 (Firebase 데이터)
-          const Expanded(child: _ChatDetailView()),
-        ],
+      backgroundColor: Acolor.baseBackgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              SizedBox(width: 360, child: _buildSidebar(ref)),
+              const SizedBox(width: 16),
+              const Expanded(child: _ChatDetailView()),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -142,81 +149,203 @@ class TeacherChatting extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoryProvider);
     final selectedInquiry = ref.watch(selectedInquiryProvider);
 
-    return Column(
-      children: [
-        const SizedBox(height: 60),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('문의 내역', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: () {
-                ref.invalidate(chatTargetProvider);
-                ref.invalidate(categoryProvider);
-                ref.invalidate(selectedInquiryProvider);
-                ref.invalidate(chatStreamProvider);
-              },
-              icon: const Icon(Icons.refresh),
-              tooltip: '새로고침',
+    return Container(
+      decoration: BoxDecoration(
+        color: Acolor.onPrimaryColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Acolor.appBarBackgroundColor.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Acolor.onPrimaryColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Acolor.secondaryBackgroundColor),
+                  ),
+                  child: Icon(Icons.forum, color: Acolor.appBarBackgroundColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '문의 내역',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        color: Acolor.appBarBackgroundColor,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '최근 문의를 빠르게 확인하세요',
+                        style: TextStyle(fontSize: 12, color: _kTeacherMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                  color: Acolor.onPrimaryColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Acolor.secondaryBackgroundColor),
+                  ),
+                  child: IconButton(
+                    onPressed: () {
+                      ref.invalidate(chatTargetProvider);
+                      ref.invalidate(categoryProvider);
+                      ref.invalidate(selectedInquiryProvider);
+                      ref.invalidate(chatStreamProvider);
+                    },
+                    icon: const Icon(Icons.refresh),
+                    tooltip: '새로고침',
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: listAsync.when(
-            data: (items) => categoriesAsync.when(
-              data: (categoryMap) => ListView.builder(
-                itemCount: items.length,
-                itemBuilder: (ctx, idx) {
-                final item = items[idx];
-                final bool isSelected = selectedInquiry?['guardian_id'] == item['guardian_id'];
-                final int? guardianId = int.tryParse(item['guardian_id'].toString());
-                final String studentName = _readableText(
-                  item['student_name'] ?? item['guardian_name'],
-                  '이름 없음',
-                );
-                final categoryIdAsync = guardianId == null
-                    ? const AsyncValue<int?>.data(null)
-                    : ref.watch(latestCategoryIdProvider(guardianId));
-                Uint8List? img;
-                if (item['student_image'] != null) img = base64Decode(item['student_image']);
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: listAsync.when(
+              data: (items) => categoriesAsync.when(
+                data: (categoryMap) => ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (ctx, idx) {
+                    final item = items[idx];
+                    final bool isSelected =
+                        selectedInquiry?['guardian_id'] == item['guardian_id'];
+                    final int? guardianId =
+                        int.tryParse(item['guardian_id'].toString());
+                    final String studentName = _readableText(
+                      item['student_name'] ?? item['guardian_name'],
+                      '이름 없음',
+                    );
+                    final categoryIdAsync = guardianId == null
+                        ? const AsyncValue<int?>.data(null)
+                        : ref.watch(latestCategoryIdProvider(guardianId));
+                    Uint8List? img;
+                    if (item['student_image'] != null) {
+                      img = base64Decode(item['student_image']);
+                    }
 
-                  return ListTile(
-                    selected: isSelected,
-                    selectedTileColor: const Color(0xFFFFF9E6),
-                    onTap: () => ref.read(selectedInquiryProvider.notifier).state = item,
-                    leading: CircleAvatar(
-                      backgroundImage: img != null ? MemoryImage(img) : null,
-                      child: img == null ? const Icon(Icons.person) : null,
-                    ),
-                    title: Text(
-                      '$studentName 학부모님',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    // Firebase category_id -> MySQL category_title 매핑
-                    subtitle: categoryIdAsync.when(
-                      data: (categoryId) {
-                        final String categoryTitle = _readableText(
-                          categoryId == null ? null : categoryMap[categoryId],
-                          '제목 없음',
-                        );
-                        return Text('문의 : $categoryTitle');
-                      },
-                      loading: () => const Text('문의 : 불러오는 중...'),
-                      error: (e, s) => Text('문의 : 제목 없음'),
-                    ),
-                  );
-                },
+                    return InkWell(
+                      onTap: () => ref
+                          .read(selectedInquiryProvider.notifier)
+                          .state = item,
+                      borderRadius: BorderRadius.circular(18),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Acolor.onPrimaryColor
+                              : Acolor.baseBackgroundColor,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isSelected
+                                ? Acolor.primaryColor
+                                : Acolor.secondaryBackgroundColor,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Acolor.appBarBackgroundColor
+                                        .withOpacity(0.08),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundImage: img != null ? MemoryImage(img) : null,
+                              backgroundColor: Acolor.secondaryBackgroundColor,
+                              child: img == null
+                                  ? Icon(Icons.person,
+                                      color: Acolor.appBarBackgroundColor)
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$studentName 학부모님',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Acolor.appBarBackgroundColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  categoryIdAsync.when(
+                                    data: (categoryId) {
+                                      final String categoryTitle = _readableText(
+                                        categoryId == null
+                                            ? null
+                                            : categoryMap[categoryId],
+                                        '제목 없음',
+                                      );
+                                      return Text(
+                                        '문의 · $categoryTitle',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _kTeacherMuted,
+                                        ),
+                                      );
+                                    },
+                                    loading: () => Text(
+                                      '문의 · 불러오는 중...',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _kTeacherMuted,
+                                      ),
+                                    ),
+                                    error: (e, s) => Text(
+                                      '문의 · 제목 없음',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _kTeacherMuted,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, color: _kTeacherMuted),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, s) => Center(child: Text('카테고리 로드 실패: $e')),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('카테고리 로드 실패: $e')),
+              error: (e, s) => Center(child: Text('데이터 로드 실패: $e')),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(child: Text('데이터 로드 실패: $e')),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -422,12 +551,62 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
 
     return Column(
       children: [
-        AppBar(
-          title: Text('${inquiry['student_name']} 학부모님'),
-          backgroundColor: Colors.white,
-          elevation: 0,
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          decoration: BoxDecoration(
+            color: Acolor.primaryColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: Acolor.onPrimaryColor,
+                child: Icon(Icons.school,
+                    color: Acolor.appBarBackgroundColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${inquiry['student_name']} 학부모님',
+                      style: TextStyle(
+                        color: Acolor.appBarBackgroundColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '실시간 상담 중',
+                      style: TextStyle(
+                        color: Acolor.appBarBackgroundColor.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Acolor.onPrimaryColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'ONLINE',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: Acolor.appBarBackgroundColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        const Divider(height: 1),
         Expanded(
           child: chatData.when(
             data: (msgs) {
@@ -436,27 +615,36 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
                 _scrollToBottom();
               }
               final reversedMsgs = msgs.reversed.toList();
-              return ListView.builder(
-                controller: _scrollController,
-                reverse: true,
-                padding: const EdgeInsets.all(20),
-                itemCount: reversedMsgs.length,
-                itemBuilder: (ctx, idx) {
-                  final m = reversedMsgs[idx];
-                  return _buildBubble(
-                    m['contents'],
-                    m['imageUrl'],
-                    m['date'],
-                    m['isTeacher'],
-                  );
-                },
+              return Container(
+                color: Acolor.onPrimaryColor,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: const EdgeInsets.all(24),
+                  itemCount: reversedMsgs.length,
+                  itemBuilder: (ctx, idx) {
+                    final m = reversedMsgs[idx];
+                    return _buildBubble(
+                      m['contents'],
+                      m['imageUrl'],
+                      m['date'],
+                      m['isTeacher'],
+                    );
+                  },
+                ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, s) => Center(child: Text('에러: $e')),
           ),
         ),
-        _buildInputBar(),
+        Container(
+          decoration: BoxDecoration(
+            color: Acolor.onPrimaryColor,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+          ),
+          child: SafeArea(child: _buildInputBar()),
+        ),
       ],
     );
   }
@@ -468,19 +656,38 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     bool isMe,
   ) {
     final String? url = (imageUrl ?? '').trim().isEmpty ? null : imageUrl;
+    final bool isMine = isMe;
+    final TextStyle messageStyle = TextStyle(
+      color: Acolor.appBarBackgroundColor,
+      fontSize: 16,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          if (!isMe)
+            Text(
+              DateFormat('a h:mm').format(date),
+              style: TextStyle(fontSize: 10, color: _kTeacherMuted),
+            ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isMe ? const Color(0xFFF7D060) : const Color(0xFFF1F1F1),
-              borderRadius: BorderRadius.circular(12),
+              color: isMine ? Acolor.primaryColor : Acolor.onPrimaryColor,
+              borderRadius: BorderRadius.circular(18),
+              border: isMine
+                  ? null
+                  : Border.all(color: Acolor.secondaryBackgroundColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Acolor.appBarBackgroundColor.withOpacity(0.07),
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -502,19 +709,17 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
                   ),
                 if (contents.trim().isNotEmpty) ...[
                   if (url != null) const SizedBox(height: 8),
-                  Text(
-                    contents,
-                    style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black,
-                      fontSize: 16,
-                    ),
-                  ),
+                  Text(contents, style: messageStyle),
                 ],
               ],
             ),
           ),
           const SizedBox(width: 8),
-          if (isMe) Text(DateFormat('a h:mm').format(date), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          if (isMe)
+            Text(
+              DateFormat('a h:mm').format(date),
+              style: TextStyle(fontSize: 10, color: _kTeacherMuted),
+            ),
         ],
       ),
     );
@@ -522,26 +727,63 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
 
   Widget _buildInputBar() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Row(
         children: [
-          IconButton(
-            onPressed: _pickAndSendImage,
-            icon: const Icon(Icons.add, color: Color(0xFFF7D060), size: 30),
+          Container(
+            decoration: BoxDecoration(
+              color: Acolor.primaryColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: IconButton(
+              onPressed: _pickAndSendImage,
+              icon: Icon(Icons.add,
+                  color: Acolor.appBarBackgroundColor, size: 26),
+            ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: _textController,
               decoration: InputDecoration(
                 hintText: '메시지를 입력하세요',
                 filled: true,
-                fillColor: const Color(0xFFF8F8F8),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                fillColor: Acolor.onPrimaryColor,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide:
+                      BorderSide(color: Acolor.secondaryBackgroundColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide:
+                      BorderSide(color: Acolor.secondaryBackgroundColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide:
+                      BorderSide(color: Acolor.primaryColor, width: 1.2),
+                ),
               ),
               onSubmitted: (_) => _send(),
             ),
           ),
-          IconButton(onPressed: _send, icon: const Icon(Icons.send, color: Color(0xFFF7D060), size: 30)),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Acolor.appBarBackgroundColor,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: IconButton(
+              onPressed: _send,
+              icon: Icon(Icons.send,
+                  color: Acolor.appBarForegroundColor, size: 22),
+            ),
+          ),
         ],
       ),
     );

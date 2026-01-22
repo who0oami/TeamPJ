@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:student/util/config.dart' as config;
+import 'package:teacher/model/attendance.dart';
+import 'package:teacher/util/config.dart' as config;
 
 //  Attendance Provider
 /*

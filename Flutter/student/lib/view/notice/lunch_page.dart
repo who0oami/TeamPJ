@@ -1,5 +1,5 @@
 /* 
-Description : homework page - firebase에 데이터 추출
+Description : homework page 
 Date : 2026-1-21
 Author : 정시온
 */

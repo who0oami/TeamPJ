@@ -1,3 +1,13 @@
+/* 
+Description : 선생님 채팅 페이지 구성 및 개선
+  - 문의 목록 UI 재구성 및 새로고침 동작 정리
+  - 채팅 상세 화면 스타일/입력바 개선
+  - 하단 스크롤 고정 및 최신 메시지 표시 흐름 조정
+  - Firebase 채팅 데이터 스트림 연동
+Date : 2026-1-22
+Author : 이상현
+*/
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -144,6 +154,7 @@ class TeacherChatting extends ConsumerWidget {
     );
   }
 
+  // 문의 목록 사이드바 UI.
   Widget _buildSidebar(WidgetRef ref) {
     final listAsync = ref.watch(chatTargetProvider);
     final categoriesAsync = ref.watch(categoryProvider);
@@ -384,6 +395,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     });
   }
 
+  // 전역 스낵바 표시.
   void _showSnack(String message) {
     // [Codex] Use global messenger to avoid missing context issues.
     final messenger = scaffoldMessengerKey.currentState;
@@ -404,7 +416,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     );
   }
 
-
+  // 텍스트 메시지 전송.
   void _send() async {
     final inquiry = ref.read(selectedInquiryProvider);
     final text = _textController.text.trim();
@@ -434,6 +446,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     }
   }
 
+  // 이미지 선택 후 전송.
   Future<void> _pickAndSendImage() async {
     final inquiry = ref.read(selectedInquiryProvider);
     if (inquiry == null) {
@@ -469,6 +482,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     }
   }
 
+  // Firebase 메시지 전송 재시도 처리.
   Future<void> _retrySend(
     {
     required CollectionReference col,
@@ -649,6 +663,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     );
   }
 
+  // 채팅 버블 UI.
   Widget _buildBubble(
     String contents,
     String? imageUrl,
@@ -725,6 +740,7 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     );
   }
 
+  // 메시지 입력/전송 바 UI.
   Widget _buildInputBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

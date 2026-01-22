@@ -1,3 +1,13 @@
+/* 
+Description : 메인 페이지 구성 및 데이터 연동
+  - 학생 프로필/드로워 UI 구성 및 로그아웃 동작 추가
+  - 캘린더/일정/시간표/급식 위젯 구성
+  - 출석 체크 팝업 및 긴급 호출 버튼 구성
+  - GetStorage 기반 학생 ID 연동
+Date : 2026-1-22
+Author : 이상현
+*/
+
 /*
 Description : 화면구성 작업
 1. 학생 데이터만 연결해서 로그인 한 학생 데이터 임시로 1번으로 지정 해서 작업
@@ -122,6 +132,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   // --- UI 구성 위젯들 ---
 
+  // 학생 정보 드로워 UI.
   Widget _buildStudentDrawer(AsyncValue<Student> studentAsync) {
     return Drawer(
       child: SafeArea(
@@ -198,6 +209,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 날짜/오늘 일정 헤더 UI.
   Widget _buildDateHeader(String date, String message) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -225,6 +237,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 학생 프로필 카드 UI.
   Widget _buildProfileCard(AsyncValue<Student> studentAsync) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -297,6 +310,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 섹션 타이틀 공통 UI.
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
@@ -314,6 +328,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     ); //뷁
   }
 
+  // 일정 표시 캘린더 UI.
   Widget _buildCalendar(
     WidgetRef ref,
     DateTime? selectedDay,
@@ -367,6 +382,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 시간표 섹션 로딩/에러/데이터 분기 UI.
   Widget _buildTimetableSection(AsyncValue<List<Timetable>> timetableAsync) {
     return timetableAsync.when(
       loading: () => const Padding(
@@ -394,6 +410,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   }
 
   // [Codex] Render Firestore timetable model.
+  // 시간표 테이블 UI.
   Widget _buildTimetable(Timetable timetable) {
     final Map<String, List<String>> table = timetable.timetable_table;
     const days = ['월', '화', '수', '목', '금'];
@@ -433,6 +450,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 시간표 셀 UI.
   Widget _cell(String text, {bool isHeader = false}) {
     return Container(
       height: 48,
@@ -447,6 +465,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 급식 섹션 로딩/에러/데이터 분기 UI.
   Widget _buildMealSection(AsyncValue<List<LunchMenu>> lunchAsync) {
     return lunchAsync.when(
       loading: () => const Padding(
@@ -470,6 +489,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   }
 
   // [Codex] Render lunch menu grid from Firestore data.
+  // 급식 카드 그리드 UI.
   Widget _buildMealGrid(List<LunchMenu> menus) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -536,6 +556,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  // 긴급 호출 버튼 UI.
   Widget _buildEmergencyButton() {
     // 긴급호출 버튼 위젯
     return SizedBox(

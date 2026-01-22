@@ -1,3 +1,13 @@
+/* 
+Description : 학부모 채팅 페이지 구성 및 개선
+  - 채팅 UI 재구성 및 입력바 스타일 개선
+  - 카테고리 선택 드롭다운 추가 및 라벨 정리
+  - 하단 스크롤 고정 및 최신 메시지 표시 흐름 조정
+  - Firebase 채팅 데이터 스트림 연동
+Date : 2026-1-22
+Author : 이상현
+*/
+
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -90,6 +100,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     super.dispose();
   }
 
+  // 하단으로 스크롤 이동.
   void _scrollToBottom() {
     if (!mounted || !_scrollController.hasClients) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -102,6 +113,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     });
   }
 
+  // 가디언 ID 우선순위 해석.
   int? _resolveGuardianId(List<dynamic> guardians) {
     if (widget.guardianId != null) return widget.guardianId;
     if (guardians.isEmpty) return kDefaultGuardianId;
@@ -109,6 +121,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     return g.guardian_id;
   }
 
+  // 학생 ID 우선순위 해석.
   int? _resolveStudentId(List<dynamic> guardians) {
     if (widget.studentId != null) return widget.studentId;
     if (guardians.isEmpty) return kDefaultStudentId;
@@ -116,6 +129,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     return g.student_id;
   }
 
+  // 메시지 전송 공통 처리.
   Future<void> _sendMessage(
     int guardianId,
     int studentId, {
@@ -164,12 +178,14 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     }
   }
 
+  // 텍스트 메시지 전송.
   Future<void> _sendText(int guardianId, int studentId) async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
     await _sendMessage(guardianId, studentId, text: text);
   }
 
+  // 이미지 선택 후 전송.
   Future<void> _pickAndSendImage(int guardianId, int studentId) async {
     final XFile? picked = await _imagePicker.pickImage(
       source: ImageSource.gallery,
@@ -368,6 +384,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     );
   }
 
+  // 태블릿 사이드바 UI.
   Widget _buildSidebar(
     BuildContext context,
     dynamic guardian,
@@ -461,6 +478,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     );
   }
 
+  // 채팅 버블 UI.
   Widget _buildBubble(
     String contents,
     String? imageUrl,
@@ -541,6 +559,7 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
     );
   }
 
+  // 메시지 입력/전송 바 UI.
   Widget _buildInputBar(int guardianId, int studentId) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

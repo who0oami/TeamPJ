@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:student/util/config.dart' as config;
+import 'package:teacher/model/attendance.dart';
+import 'package:teacher/util/config.dart' as config;
 
 //  Attendance Provider
 /*
@@ -24,26 +24,10 @@ class AttendProvider extends AsyncNotifier<bool> {
   String get _baseUrl =>
       'http://${config.getSafeForwardIp()}:${config.forwardport}/restitutor';
 
-  int _readStudentId() {
-    final box = GetStorage();
-    dynamic raw = box.read('p_userid');
-    if (raw is String && raw.isEmpty) {
-      raw = null;
-    }
-    raw ??= box.read('student_id');
-    if (raw is String && raw.isEmpty) {
-      raw = null;
-    }
-    if (raw is int) return raw;
-    if (raw is String) return int.tryParse(raw) ?? 1;
-    return 1;
-  }
-
   @override
   Future<bool> build() async {
-    final studentId = _readStudentId();
-    await attendInit(studentId: studentId);
-    return await attendStatus(studentId: studentId);
+    await attendInit(studentId: 1);
+    return await attendStatus(studentId: 1);
   }
 
   Future<void> attendInit({required int studentId}) async {
@@ -71,13 +55,10 @@ class AttendProvider extends AsyncNotifier<bool> {
     required int studentId,
     required String attendanceStatus,
   }) async {
-    final now = DateTime.now().toIso8601String();
-
     final uri = Uri.parse(
       '$_baseUrl/attend/check'
       '?student_id=$studentId'
-      '&attendance_status=${Uri.encodeQueryComponent(attendanceStatus)}'
-      '&attendance_end_time=${Uri.encodeQueryComponent(now)}',
+      '&attendance_status=${Uri.encodeQueryComponent(attendanceStatus)}',
     );
 
     final res = await http.post(uri);

@@ -25,7 +25,6 @@ class Calendar extends ConsumerStatefulWidget {
 }
 
 class _CalendarState extends ConsumerState<Calendar> {
-  int? tabIndex;
   String _calendarLocale(BuildContext context) {
     final lang = Localizations.localeOf(context).languageCode;
     return (lang == 'ko') ? 'ko_KR' : 'en_US';

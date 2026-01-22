@@ -30,6 +30,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:student/view/restitutor/attend_student.dart';
 import 'package:student/view/restitutor/weather/weather.dart';
 import 'package:student/vm/restitutor/attendance_provider.dart';
 import 'package:student/vm/sanghyun/student_provider.dart';
@@ -631,12 +632,7 @@ class _AttendancePopupGateState extends ConsumerState<AttendancePopupGate> {
                         height: 52,
                         child: ElevatedButton(
                           onPressed: () async {
-                            final studentId = _readStudentId();
-                            await ref
-                                .read(attendProvider.notifier)
-                                .attendCheck(studentId: studentId);
-
-                            if (context.mounted) Navigator.pop(context);
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => AttendStudent(),));
                           },
                           child: const Text("학교왔어요 😊"),
                         ),

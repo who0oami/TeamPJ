@@ -6,6 +6,7 @@
   Update log: 
     DUMMY 00/00/0000 00:00, 'Point X, Description', Creator: Chansol, Park
           18/01/2026 12:56, 'Point 1, IP change in different devices', Creator: Chansol, Park
+          22/01/2026 10:04, 'Point 2, Actual IP added', Creator: Chansol, Park
   Version: 1.0
   Dependency: 
 */
@@ -35,6 +36,7 @@ String getSafeForwardIp() {
   return ip;
 }
 
+
 // Point 1
 String getForwardIP(){
   if (kIsWeb){
@@ -47,3 +49,6 @@ String getForwardIP(){
   }
 }
 const String forwardport = '8000';
+
+//  Point 2
+String centerIP = '192.168.10.';

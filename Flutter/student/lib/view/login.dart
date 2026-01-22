@@ -171,8 +171,8 @@ void checkLogin() async {
     final result = await studentNotifier.loginStudent(phone, pw);
     //결과값이 OK
     if (result != 'FAIL') {
-      // box.write('p_userid', result);
-      print("저장된 ID: ${box.read('p_userid')}"); // 확인용 지울 예정입니다
+    phoneController.clear();
+    pwController.clear();
       // 성공 시 다이얼로그
       Message.dialog(
         context,
@@ -180,7 +180,7 @@ void checkLogin() async {
         '오늘도 즐겁게 공부해보아요',
         Colors.white,
       );
-      saveStorage(result);
+      // saveStorage(result);
       // 페이지 이동
       Navigator.push(
       context,
@@ -196,10 +196,10 @@ void checkLogin() async {
       );
     }
   }
-  void saveStorage(String studentId){
-    box.write('p_userid', studentId);
-    phoneController.clear();
-    pwController.clear();
-  }
+  // void saveStorage(String studentId){
+  //   box.write('p_userid', studentId);
+  //   phoneController.clear();
+  //   pwController.clear();
+  // }
 } // class
 

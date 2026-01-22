@@ -18,12 +18,19 @@ final noticeCollectionProvider = Provider<CollectionReference>(
   ).collection('notice'),
 );
 
-// StreamProvider
+// StreamProvider 부분 수정
 final noticeListProvider = StreamProvider<List<Notice>>(
   (ref) {
     final col = ref.watch(noticeCollectionProvider);
     return col.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Notice.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+      final list = snapshot.docs
+          .map((doc) => Notice.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+
+      // 최신순 정렬 추가 (내림차순)
+      list.sort((a, b) => b.notice_insertdate.compareTo(a.notice_insertdate));
+
+      return list;
     });
   },
 );

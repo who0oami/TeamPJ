@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teacher/model/student.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:student/model/student.dart';
 
 class StudentNotifier extends AsyncNotifier<List<Student>>{
   final String baseUrl = "http://127.0.0.1:8000/dusik";
@@ -16,7 +17,7 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
   List<Student> students = [];
   bool isLoading = false;
   String? error;
-
+  final box = GetStorage(); // GetStorage 인스턴스 생성
 
   Future<List<Student>> fetchStudents() async{ 
   //   isLoading = true;
@@ -31,6 +32,19 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
     return (data['results'] as List).map((d) => Student.fromJson(d)).toList();
   }
 
+   Future<List<Student>> loginStudents() async{ 
+  //   isLoading = true;
+  //   error = null; try - catch 방법에서 수정
+    final res = await http.get(Uri.parse("$baseUrl/student_login"));
+
+    if(res.statusCode != 200){
+      throw Exception('불러오기 실패: ${res.statusCode}');
+    }
+
+    final data = json.decode(utf8.decode(res.bodyBytes));
+    return (data['results'] as List).map((d) => Student.fromJson(d)).toList(); // 차이점: list로 return
+  }
+
   Future<String> insertStudent(Student s)async{
     final url = Uri.parse("$baseUrl/insert");
     final response = await http.post(
@@ -43,6 +57,30 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
     return data['result'];
   }
 
+  Future<String> loginStudent(String phone, String password) async {
+    final url = Uri.parse("$baseUrl/student_login");
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'student_phone': phone,
+        'student_password': password,
+      }),
+    );
+    final data = json.decode(utf8.decode(response.bodyBytes));
+    print("서버 응답 데이터: $data");
+    if (data.toString().contains('Fail') || data.toString().contains('Error')) {
+    return 'FAIL';
+  } 
+  if (data is List && data.isNotEmpty) {
+    final studentId = data[0]['student_id'].toString();
+    await box.write('student_id', studentId);
+    print("저장된 ID: ${box.read('student_id')}"); // 확인용 지울 예정입니다
+    return studentId;
+    
+  }
+  return 'FAIL';
+}
 
   Future<void> refreshStudents() async{
     state = const AsyncLoading();

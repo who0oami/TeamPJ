@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:student/firebase_options.dart';
+import 'package:student/view/login.dart';
 import 'package:student/view/main_page.dart';
 
 void main() async{
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
       
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: NoticeTabbar(),
+      home: MainPage(),
     );
   }
 }

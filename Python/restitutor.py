@@ -177,7 +177,7 @@ def attend_status(student_id: int):
         conn.close()
 
 @router.post("/attend/check")
-def attend_check(student_id: int):
+def attend_check(attendance_status: str, student_id: int):
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     conn = connect()
@@ -186,12 +186,42 @@ def attend_check(student_id: int):
 
         sql = """
         UPDATE attendance
-        SET attendance_status='출석'
+        SET attendance_status=%s
         WHERE student_id=%s AND attendance_start_time=%s
         """
-        curs.execute(sql, (student_id, today))
+        curs.execute(sql, (attendance_status, student_id, today))
         conn.commit()
 
         return {"updated": curs.rowcount == 1}
+    finally:
+        conn.close()
+        
+@router.get("/attend/query")
+def attend_query(student_id: int):
+    conn = connect()
+    try:
+        curs = conn.cursor(pymysql.cursors.DictCursor)
+
+        sql = """
+        SELECT
+            student_id,
+            attendance_start_time,
+            attendance_status
+        FROM attendance
+        WHERE student_id = %s
+        """
+        curs.execute(sql, (student_id,))
+        rows = curs.fetchall()
+
+        result = [
+            {
+                "student_id": row["student_id"],
+                "attendance_start_time": row["attendance_start_time"],
+                "attendance_status": row["attendance_status"],
+            }
+            for row in rows
+        ]
+
+        return result
     finally:
         conn.close()

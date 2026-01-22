@@ -52,7 +52,6 @@ class _LoginState extends ConsumerState<Login> {
   void dispose() {
     phoneController.dispose();
     pwController.dispose();
-    box.erase();
     super.dispose();
   }
 
@@ -202,4 +201,3 @@ void checkLogin() async {
   //   pwController.clear();
   // }
 } // class
-

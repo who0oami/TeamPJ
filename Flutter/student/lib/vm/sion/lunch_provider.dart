@@ -35,7 +35,7 @@ class LunchMenuActionNotifier extends Notifier<void> {
   Future<void> addLunchMenu(LunchMenu menu) async {
     final col = FirebaseFirestore.instance.collection('lunch_menu');
     await col.add({
-      'lunch_category_id': menu.lunch_category_id,
+      // 'lunch_category_id': menu.lunch_category_id,
       'lunch_menu_name': menu.lunch_menu_name,
       'lunch_menu_image': menu.lunch_menu_image,
     });

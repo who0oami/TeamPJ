@@ -10,7 +10,7 @@ router = APIRouter()
 def connect():
     return pymysql.connect(
         host=config.hostip,
-        port=config.hostPort,
+        port=config.hostport,
         user=config.hostuser,
         password=config.hostpassword,
         database=config.hostdatabase,
@@ -96,14 +96,14 @@ async def select_all_teachers():
     conn.close()
     return {"results": rows}
 
-# 4. 보호자 정보 조회 API
+# 4. 보호자 정보 조회 API (student_id 기준)
 @router.get("/select")
-async def select_guardian(guardian_id: int):
+async def select_guardian(student_id: int):
     conn = connect()
     curs = conn.cursor()
 
-    sql = "SELECT * FROM guardian WHERE guardian_id=%s"
-    curs.execute(sql, (guardian_id,))
+    sql = "SELECT * FROM guardian WHERE student_id=%s"
+    curs.execute(sql, (student_id,))
     rows = curs.fetchall()
     conn.close()
 
@@ -119,6 +119,7 @@ async def select_guardian(guardian_id: int):
     } for row in rows]
 
     return {'results': result}
+
 
 
 @router.get("/student/{student_id}")

@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:teacher/model/lunch_menu.dart';
+import 'package:guardian/model/lunch_menu.dart';
+
 
 
 /// =======================================================

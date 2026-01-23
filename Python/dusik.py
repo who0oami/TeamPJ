@@ -36,6 +36,14 @@ class GuardianTokenUpdate(BaseModel):
     guardian_id: int
     fcm_token: str
 
+class GuardianSignUp(BaseModel):
+    guardian_name: str
+    guardian_email: str
+    guardian_password: str
+    guardian_phone: str
+    student_id: int
+
+
 def connect():
     conn = pymysql.connect(
         host=config.hostip,
@@ -214,5 +222,83 @@ async def update_guardian_token(data: GuardianTokenUpdate):
     except Exception as e:
         print('Error:', e)
         return {'result': 'Error'}
+    finally:
+        conn.close()
+
+
+# @router.post("/guardian_signup")
+# async def guardian_signup(guardian: GuardianSignUp):
+#     conn = connect()
+#     curs = conn.cursor()
+#     try:
+#         # 1) 학생 인증
+#         sql_student = "SELECT count(student_id) FROM student WHERE student_id=%s"
+#         curs.execute(sql_student, (guardian.student_id,))
+#         student_exist = curs.fetchone()[0]
+#         if student_exist == 0:
+#             conn.close()
+#             return {'result': 'Fail', 'message': '학생 번호가 존재하지 않습니다.'}
+
+#         # 2) guardian 이메일/전화번호 중복 확인
+#         sql_dup = "SELECT count(guardian_id) FROM guardian WHERE guardian_email=%s OR guardian_phone=%s"
+#         curs.execute(sql_dup, (guardian.guardian_email, guardian.guardian_phone))
+#         dup_count = curs.fetchone()[0]
+#         if dup_count > 0:
+#             conn.close()
+#             return {'result': 'Fail', 'message': '이메일 또는 전화번호가 이미 등록되어 있습니다.'}
+
+#         # 3) insert
+#         sql_insert = """
+#             INSERT INTO guardian(guardian_name, guardian_email, guardian_password, guardian_phone, student_id)
+#             VALUES (%s,%s,%s,%s,%s)
+#         """
+#         curs.execute(sql_insert, (
+#             guardian.guardian_name,
+#             guardian.guardian_email,
+#             guardian.guardian_password,
+#             guardian.guardian_phone,
+#             guardian.student_id
+#         ))
+#         conn.commit()
+#         conn.close()
+#         return {'result': 'OK'}
+
+#     except Exception as e:
+#         conn.close()
+#         print("Guardian 회원가입 오류:", e)
+#         return {'result': 'Error', 'message': str(e)}
+
+@router.post("/guardian_signup")
+async def guardian_signup(guardian: GuardianSignUp):
+    conn = connect()
+    curs = conn.cursor()
+    try:
+        sql_student = "SELECT count(*) FROM student WHERE student_id=%s"
+        curs.execute(sql_student, (guardian.student_id,))
+        if curs.fetchone()[0] == 0:
+            return {'result': 'Fail', 'message': '학생 번호가 존재하지 않습니다.'}
+
+        sql_dup = "SELECT count(*) FROM guardian WHERE guardian_email=%s OR guardian_phone=%s"
+        curs.execute(sql_dup, (guardian.guardian_email, guardian.guardian_phone))
+        if curs.fetchone()[0] > 0:
+            return {'result': 'Fail', 'message': '이미 등록된 이메일 또는 전화번호입니다.'}
+
+        sql_insert = """
+            INSERT INTO guardian(guardian_name, guardian_email, guardian_password, guardian_phone, student_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        curs.execute(sql_insert, (
+            guardian.guardian_name,
+            guardian.guardian_email,
+            guardian.guardian_password,
+            guardian.guardian_phone,
+            guardian.student_id
+        ))
+        conn.commit()
+        return {'result': 'OK'}
+
+    except Exception as e:
+        print("Error during guardian signup:", e)
+        return {'result': 'Error', 'message': str(e)}
     finally:
         conn.close()

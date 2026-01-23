@@ -5,6 +5,7 @@ import 'package:student/util/acolor.dart';
 import 'package:student/util/message.dart';
 import 'package:student/view/main_page.dart';
 import 'package:student/vm/dusik/student%20_%20provider.dart';
+import 'package:flutter/services.dart'; // 추가: TextInputFormatter
 
 /* 
 Description : 학생 로그인 페이지
@@ -28,6 +29,31 @@ class Login extends ConsumerStatefulWidget {
   ConsumerState<Login> createState() => _LoginState();
 }
 
+// ---- 전화번호 자동 하이픈
+class PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    String digits = newValue.text.replaceAll(RegExp(r'\D'), ''); // 숫자만 추출
+    String formatted = '';
+    if (digits.length <= 3) {
+      formatted = digits;
+    } else if (digits.length <= 7) {
+      formatted = '${digits.substring(0, 3)}-${digits.substring(3)}';
+    } else if (digits.length <= 11) {
+      formatted =
+          '${digits.substring(0, 3)}-${digits.substring(3, 7)}-${digits.substring(7)}';
+    } else {
+      formatted =
+          '${digits.substring(0, 3)}-${digits.substring(3, 7)}-${digits.substring(7, 11)}';
+    }
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 class _LoginState extends ConsumerState<Login> {
   // Property
   late TextEditingController phoneController; // Phone
@@ -47,14 +73,12 @@ class _LoginState extends ConsumerState<Login> {
     box.write('p_password', '');
   }
 
-
   @override
   void dispose() {
     phoneController.dispose();
     pwController.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +87,7 @@ class _LoginState extends ConsumerState<Login> {
       backgroundColor: Acolor.appBarForegroundColor,
       appBar: AppBar(
         title: Text(""),
-      backgroundColor: Acolor.appBarForegroundColor,
+        backgroundColor: Acolor.appBarForegroundColor,
       ),
       body: Center(
         child: Column(
@@ -73,7 +97,7 @@ class _LoginState extends ConsumerState<Login> {
               child: Image.asset(
                 "images/head_book.png",
                 width: 150,
-                ),
+              ),
             ),
             Text("학생 정보 입력"),
             Padding(
@@ -90,18 +114,22 @@ class _LoginState extends ConsumerState<Login> {
                           style: TextStyle(
                             fontWeight: FontWeight.w600
                           ),
-                          ),
+                        ),
                         TextField(
                           controller: phoneController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly, // 숫자만
+                            PhoneNumberFormatter(), // 자동 하이픈
+                          ],
                           decoration: InputDecoration(
                             border: UnderlineInputBorder(
                               borderSide: BorderSide(color: Colors.grey)
                             ),
                             focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue, width: 2), // 클릭하면 파란색 두껍게
+                              borderSide: BorderSide(color: Colors.blue, width: 2),
                             ),
                             labelText: '전화번호를 입력하세요',
-                            // labelStyle: TextStyle(color: Acolor.successBackColor), _ 컬러가 이상함, 나중에 색상 변경 후 수정 예정
                             labelStyle: TextStyle(color: Colors.blue),
                           ),
                         ),
@@ -111,7 +139,7 @@ class _LoginState extends ConsumerState<Login> {
                           style: TextStyle(
                             fontWeight: FontWeight.w600
                           ),
-                          ),
+                        ),
                         TextField(
                           controller: pwController,
                           decoration: InputDecoration(
@@ -119,7 +147,7 @@ class _LoginState extends ConsumerState<Login> {
                               borderSide: BorderSide(color: Colors.grey)
                             ),
                             focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue, width: 2),
+                              borderSide: BorderSide(color: Colors.blue, width: 2),
                             ),
                             labelText: '비밀번호를 입력하세요',
                             labelStyle: TextStyle(color: Colors.blue),
@@ -128,20 +156,20 @@ class _LoginState extends ConsumerState<Login> {
                       ],
                     ),
                   ),
-                SizedBox(height: 40),
-                ElevatedButton(
-                  onPressed: () => checkLogin(), 
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Acolor.primaryColor,
-                    foregroundColor: Acolor.onPrimaryColor, 
-                    fixedSize: Size(200, 50)
+                  SizedBox(height: 40),
+                  ElevatedButton(
+                    onPressed: () => checkLogin(), 
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Acolor.primaryColor,
+                      foregroundColor: Acolor.onPrimaryColor, 
+                      fixedSize: Size(200, 50)
                     ),
-                  child: Text(
-                    '로그인',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18
-                    ),
+                    child: Text(
+                      '로그인',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18
+                      ),
                     ),
                   ),
                 ],
@@ -152,8 +180,9 @@ class _LoginState extends ConsumerState<Login> {
       ),
     );
   } // build
+
   // ---- Functions ----
-void checkLogin() async {
+  void checkLogin() async {
     final phone = phoneController.text.trim();
     final pw = pwController.text.trim();
     final studentNotifier = ref.read(studentNotifierProvider.notifier);
@@ -170,8 +199,8 @@ void checkLogin() async {
     final result = await studentNotifier.loginStudent(phone, pw);
     //결과값이 OK
     if (result != 'FAIL') {
-    phoneController.clear();
-    pwController.clear();
+      phoneController.clear();
+      pwController.clear();
       // 성공 시 다이얼로그
       Message.dialog(
         context,
@@ -182,9 +211,9 @@ void checkLogin() async {
       // saveStorage(result);
       // 페이지 이동
       Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MainPage()),
-    );
+        context,
+        MaterialPageRoute(builder: (context) => MainPage()),
+      );
     } else {
       // 실패 시 스낵바
       Message.snackBar(
@@ -195,6 +224,7 @@ void checkLogin() async {
       );
     }
   }
+
   // void saveStorage(String studentId){
   //   box.write('p_userid', studentId);
   //   phoneController.clear();

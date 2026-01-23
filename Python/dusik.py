@@ -32,6 +32,10 @@ class GuardianLogin(BaseModel):
     guardian_email: str
     guardian_password: str
 
+class GuardianTokenUpdate(BaseModel):
+    guardian_id: int
+    fcm_token: str
+
 def connect():
     conn = pymysql.connect(
         host=config.hostip,
@@ -129,30 +133,86 @@ async def login_teacher(teacher: TeacherLogin):
     except Exception as e:
         print('Error:', e)
         return {'result' : 'Error'}
-        # >>>>> student 테이블 , 선생 로그인 확인용
+        # >>>>> teacher 테이블 , 선생 로그인 확인용
+
+# @router.post("/guardian_login")
+# async def login_guardian(guardian: GuardianLogin):
+#     # Connection으로 부터 Cursor 생성
+#     conn = connect()
+#     curs = conn.cursor()
+
+#     # SQL 문장
+#     try:
+#         sql = """
+#                 SELECT count(guardian_id), student_id, guardian_name
+#                 FROM guardian
+#                 WHERE guardian_email=%s AND guardian_password=%s
+#                 """
+#         curs.execute(sql, ( guardian.guardian_email, guardian.guardian_password ))
+#         conn.commit()
+#         result = curs.fetchone()
+#         conn.close()
+#         if result and result[0] == 1:
+#             return [{'student_id' : result[1], 'guardian_name' : result[2],}]
+#         else:
+#             return {'result' : 'Fail'}
+#     except Exception as e:
+#         print('Error:', e)
+#         return {'result' : 'Error'}
+#         # >>>>> guardian 테이블 , 보호자 로그인 확인용
 
 @router.post("/guardian_login")
 async def login_guardian(guardian: GuardianLogin):
-    # Connection으로 부터 Cursor 생성
     conn = connect()
     curs = conn.cursor()
 
-    # SQL 문장
     try:
         sql = """
-                SELECT count(guardian_id), student_id, guardian_name
+                SELECT count(guardian_id), guardian_id, student_id, guardian_name
                 FROM guardian
                 WHERE guardian_email=%s AND guardian_password=%s
                 """
-        curs.execute(sql, ( guardian.guardian_email, guardian.guardian_password ))
-        conn.commit()
+        curs.execute(sql, (guardian.guardian_email, guardian.guardian_password))
         result = curs.fetchone()
         conn.close()
+
         if result and result[0] == 1:
-            return [{'student_id' : result[1], 'guardian_name' : result[2],}]
+            return [{
+                'guardian_id': result[1],
+                'student_id': result[2],
+                'guardian_name': result[3],
+            }]
         else:
-            return {'result' : 'Fail'}
+            return {'result': 'Fail'}
+
+    except Exception as e:
+        conn.close()
+        print('Error:', e)
+        return {'result': 'Error'}
+
+
+@router.post("/guardian/update_token")
+async def update_guardian_token(data: GuardianTokenUpdate):
+    conn = connect()
+    curs = conn.cursor()
+    try:
+        sql = """
+            UPDATE guardian
+            SET guardian_fcm_token = %s
+            WHERE guardian_id = %s
+        """
+        affected_rows = curs.execute(
+            sql,
+            (data.fcm_token, data.guardian_id)
+        )
+        conn.commit()
+
+        if affected_rows > 0:
+            return {'result': 'OK'}
+        else:
+            return {'result': 'Fail'}
     except Exception as e:
         print('Error:', e)
-        return {'result' : 'Error'}
-        # >>>>> student 테이블 , 보호자 로그인 확인용
+        return {'result': 'Error'}
+    finally:
+        conn.close()

@@ -161,7 +161,7 @@ void checkLogin() async {
     //서버로 로그인 요청 (위의 if문에 걸리지 않았을 때
     final result = await guardianNotifier.loginGuardian(email,pw);
     //결과값이 OK
-    if (result != 'FAIL') {
+    if (result == 'OK') {
       emailController.clear();
       pwController.clear();
       // 성공 시 다이얼로그
@@ -181,7 +181,7 @@ void checkLogin() async {
       // 실패 시 스낵바
       Message.snackBar(
         context,
-        '전화번호와 비밀번호를 확인해주세요',
+        '이메일과 비밀번호를 확인해주세요',
         2,
         Colors.red,
       );
@@ -192,5 +192,7 @@ void checkLogin() async {
   //   emailController.clear();
   //   pwController.clear();
   // }
+
+  
 } // class
 

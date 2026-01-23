@@ -25,6 +25,7 @@ class EmergencyAlertPage extends ConsumerWidget {
           loading: () => const CircularProgressIndicator(),
           error: (e, _) => Text("에러 발생: $e"),
           data: (alert) {
+            print(alert);
             if (alert == null) {
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,

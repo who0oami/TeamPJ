@@ -30,6 +30,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:student/view/emergency.dart';
 import 'package:student/view/restitutor/attend_student.dart';
 import 'package:student/view/restitutor/weather/weather.dart';
 import 'package:student/vm/restitutor/attendance_provider.dart';
@@ -603,7 +604,7 @@ class _MainPageState extends ConsumerState<MainPage> {
           side: const BorderSide(color: Colors.white, width: 4),
         ),
         onPressed: () {
-          // 긴급호출 페이지로 이동
+          Navigator.push(context, MaterialPageRoute(builder: (context) => Emergency()));
         },
         child: const Text(
           '긴급\n호출',

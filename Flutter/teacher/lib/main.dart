@@ -2,9 +2,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:teacher/app_keys.dart';
 import 'package:teacher/firebase_options.dart';
 import 'package:teacher/view/chatting/teacher_chatting.dart';
+import 'package:teacher/view/dusik/teacher_login.dart';
 import 'package:teacher/view/restitutor/attendanceTeacher.dart';
 
 void main() async{
@@ -16,6 +18,7 @@ void main() async{
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+    await initializeDateFormatting('ko_KR', null);
     final db = FirebaseFirestore.instanceFor(
       app: Firebase.app(),
       databaseId: 'atti',
@@ -47,7 +50,7 @@ class MyApp extends StatelessWidget {
       
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: AttendanceTeacher(),
+      home: TeacherLogin(),
     );
   }
 }

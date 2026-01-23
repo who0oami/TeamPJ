@@ -515,43 +515,7 @@ class _TeacherMainPageState extends ConsumerState<TeacherMainPage> {
   }
 
   // ================= Schedule List =================
-  Widget _buildScheduleList(WidgetRef ref) {
-    final schedules = ref.watch(scheduleMapProvider);
-    final selectedDate = ref.watch(selectedDayProvider);
-
-    final key = DateTime(
-      selectedDate!.year,
-      selectedDate.month,
-      selectedDate.day,
-    );
-
-    final todaySchedules = schedules[key] ?? [];
-
-    if (todaySchedules.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text(
-          "오늘은 등록된 일정이 없습니다",
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
-    return Column(
-      children: todaySchedules.map((Schedule s) {
-        final timeStr =
-            DateFormat('HH:mm').format(s.schedule_startdate);
-
-        return ListTile(
-          leading: const Icon(Icons.event),
-          title: Text(s.schedule_title),
-          subtitle:
-              Text("$timeStr - ${s.schedule_contents}"),
-        );
-      }).toList(),
-    );
-  }
-
+ 
   // ================= TimeTable =================
   Widget _buildTimeTable(Timetable timetable) {
     final table = timetable.timetable_table;

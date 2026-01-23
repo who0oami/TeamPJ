@@ -47,12 +47,12 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
       return [];
     }
 
-    return await fetchTeacher(id);
+    return await fetchTeacher(id, box);
   }
 
-  Future<List<Teacher>> fetchTeacher(String teacherId) async {
+  Future<List<Teacher>> fetchTeacher(String teacherId, GetStorage input) async {
     try {
-      final teacherId = box.read('teacher_id');
+      final teacherId = input.read('teacher_id');
 
       if (teacherId == null) {
         print('⚠️ 저장된 teacher_id 없음');
@@ -81,7 +81,7 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
     }
   }
 
-  Future<void> refreshTeacher() async {
+  Future<void> refreshTeacher(GetStorage input) async {
     state = const AsyncLoading();
     // ✅ 현재 teacher_id로 다시 가져오기
     final id = ref.read(storageProvider).read('teacher_id')?.toString();
@@ -89,7 +89,7 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
       state = const AsyncData([]);
       return;
     }
-    state = await AsyncValue.guard(() async => await fetchTeacher(id));
+    state = await AsyncValue.guard(() async => await fetchTeacher(id, input));
   }
 }
 

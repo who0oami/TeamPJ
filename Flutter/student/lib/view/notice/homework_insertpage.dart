@@ -75,7 +75,7 @@ class _HomeworkInsertState extends ConsumerState<HomeworkInsertpage>{
                       CircleAvatar(
                         radius: 22,
                         backgroundImage: NetworkImage(
-                          "http://192.168.10.107:8000/minjae/view/${teacher.teacher_id}",
+                          "http://10.0.2.2:8000/minjae/view/${teacher.teacher_id}",
                         ),
                       ),
                       const SizedBox(width: 12),

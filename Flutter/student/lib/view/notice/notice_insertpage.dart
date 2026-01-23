@@ -74,7 +74,7 @@ class _NoticeInsertState extends ConsumerState<NoticeInsertpage> {
                       CircleAvatar(
                         radius: 22, // 조금 더 키웠어요
                         backgroundImage: NetworkImage(
-                          "http://192.168.10.107:8000/minjae/view/${teacher.teacher_id}",
+                          "http://10.0.2.2:8000/minjae/view/${teacher.teacher_id}",
                         ),
                       ),
                       const SizedBox(width: 12),

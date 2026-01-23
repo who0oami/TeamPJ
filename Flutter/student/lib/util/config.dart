@@ -12,6 +12,29 @@
 
 import 'package:flutter/foundation.dart';
 
+bool _isAllowedLanIp(String host) {
+  final match =
+      RegExp(r'^192\.168\.10\.(\d{1,3})$').firstMatch(host.trim());
+
+  if (match == null) return false;
+
+  final last = int.parse(match.group(1)!);
+  return last >= 0 && last <= 255;
+}
+
+String getSafeForwardIp() {
+  final ip = getForwardIP();
+
+  if (!_isAllowedLanIp(ip)) {
+    throw Exception(
+      '허용되지 않은 네트워크입니다.\n'
+      '192.168.10.x 환경에서만 사용 가능합니다.',
+    );
+  }
+
+  return ip;
+}
+
 // Point 1
 String getForwardIP(){
   if (kIsWeb){

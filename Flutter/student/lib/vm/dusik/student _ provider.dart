@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:student/model/student.dart';
 
 class StudentNotifier extends AsyncNotifier<List<Student>>{
-  final String baseUrl = "http://127.0.0.1:8000/dusik";
+  final String baseUrl = "http://10.0.2.2:8000/dusik";
 
   @override // 함수 수정해서 쓰는게 override
   FutureOr<List<Student>> build() async{

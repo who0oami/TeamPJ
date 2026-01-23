@@ -1,6 +1,6 @@
 /* 
-Description : notice page - firebase에 데이터 추출
-Date : 2026-1-19
+Description : notice page - insert 들어가게 함!
+Date : 2026-1-22
 Author : 정시온
 */
 
@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:student/view/notice/homework_page.dart';
+import 'package:student/view/notice/notice_insertpage.dart';
 import 'package:student/vm/sion/notice_provider.dart';
+import 'package:student/vm/sion/teacher_riverpod.dart';
 
 class NoticePage extends ConsumerStatefulWidget {
   const NoticePage({super.key});
@@ -19,101 +21,105 @@ class NoticePage extends ConsumerStatefulWidget {
 
 
 
-class _NoticeState extends ConsumerState<NoticePage>{
-
-  
+class _NoticeState extends ConsumerState<NoticePage> {
   @override
   Widget build(BuildContext context) {
-    final noticeAsync = ref.watch(noticeListProvider); //>>>>>> merge 후 연결
+    final noticeAsync = ref.watch(noticeListProvider);
 
     return Scaffold(
-
-      
-      body: Column(
-        
-        children: [
-
-          Expanded(
-          child: noticeAsync.when(
-            data: (noticeList) {
-              if (noticeList.isEmpty) {
-                return const Center(child: Text('공지사항이 없습니다.'));
-              }
-          
-              return ListView.builder(
-                itemCount: noticeList.length + 1, // 하단 안내문구를 위해 +1
-                itemBuilder: (context, index) {
-                  // 마지막 아이템은 "모두 조회했습니다" 문구 표시
-                  if (index == noticeList.length) {
-                    return _buildFooter();
-                  }
-          
-                  final notice = noticeList[index];
-                  return _buildNoticeCard(notice);
-                },
-              );
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: noticeAsync.when(
+        data: (noticeList) {
+          if (noticeList.isEmpty) return const Center(child: Text('공지사항이 없습니다.'));
+          return ListView.builder(
+            itemCount: noticeList.length + 1,
+            itemBuilder: (context, index) {
+              if (index == noticeList.length) return _buildFooter();
+              return _buildNoticeCard(noticeList[index], ref);
             },
-            error: (error, stackTrace) => Center(child: Text('Error: $error')),
-            loading: () => const Center(child: CircularProgressIndicator()),
-          ),
-        ),
-        ],
-        
+          );
+        },
+        error: (error, stack) => Center(child: Text('Error: $error')),
+        loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
   }
 
-  // 공지사항 카드 디자인 위젯
-  Widget _buildNoticeCard(notices) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8), // 카드 사이의 간격
-      color: Colors.white, // 카드 배경색
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 20,
-                backgroundColor: Color(0xFFE0E0E0),
-                child: Icon(Icons.person, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "정시온 선생님", // 나중에 데이터 연결 가능
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+  Widget _buildNoticeCard(notices, WidgetRef ref) {
+    final teacherAsync = ref.watch(teacherNotifierProvider);
+
+    return teacherAsync.when(
+  data: (teachers) {
+    final teacherMap = {
+      for (var t in teachers) t.teacher_id.toString(): t
+    };
+
+    final selectedTeacher = teacherMap[notices.teacher_id.toString()] 
+                            ?? (teachers.isNotEmpty ? teachers.first : null);
+
+    if (selectedTeacher == null) {
+      return const SizedBox(height: 100, child: Center(child: Text("선생님 정보 없음")));
+    }
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, 
+        MaterialPageRoute(
+                builder: (context) => NoticeInsertpage(notice: notices, teacher: selectedTeacher, 
+              ),));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        color: Colors.white,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: NetworkImage(
+                    "http://10.0.2.2:8000/minjae/view/${selectedTeacher.teacher_id}",
                   ),
-                  Text(
-                    DateFormat('yy.MM.dd E요일', 'ko_KR').format(notices.notice_insertdate),
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // 2. 제목
-          Text(
-            notices.notice_title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          // 3. 내용
-          Text(
-            notices.notice_content,
-            style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.5),
-          ),
-          const SizedBox(height: 12),
-          // 4. 사진
-          ImageSlider(images:notices.notice_images),
-          const SizedBox(height: 12),
-        ],
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${selectedTeacher.teacher_name} 선생님",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    Text(
+                      DateFormat('yy.MM.dd E요일', 'ko_KR').format(notices.notice_insertdate),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              notices.notice_title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              notices.notice_content,
+              style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.5),
+            ),
+            const SizedBox(height: 12),
+            ImageSlider(images: notices.notice_images),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
+  },
+  loading: () => const Center(child: CircularProgressIndicator()),
+  error: (error, stack) => const Text("데이터를 불러올 수 없습니다."),
+);
   }
 
   // 하단 안내 문구 위젯

@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:student/model/teacher.dart';
 
 class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
-  final String baseUrl = "http://192.168.10.107:8000"; // Android 에뮬레이터 기준
+  final String baseUrl = "http://10.0.2.2:8000"; // Android 에뮬레이터 기준
 
   @override
   FutureOr<List<Teacher>> build() async {

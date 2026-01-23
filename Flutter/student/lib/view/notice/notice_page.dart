@@ -80,7 +80,7 @@ class _NoticeState extends ConsumerState<NoticePage> {
                 CircleAvatar(
                   radius: 20,
                   backgroundImage: NetworkImage(
-                    "http://192.168.10.107:8000/minjae/view/${selectedTeacher.teacher_id}",
+                    "http://10.0.2.2:8000/minjae/view/${selectedTeacher.teacher_id}",
                   ),
                 ),
                 const SizedBox(width: 12),

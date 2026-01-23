@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,8 +19,10 @@ class EmergencyAlertNotifier extends AsyncNotifier<EmergencyAlert?> {
   Future<EmergencyAlert?> fetchEmergency() async {
     final guardianId = box.read('guardian_id');
     if (guardianId == null) return null;
-    final snapshot = await FirebaseFirestore.instance
-        .collection("emergency_alerts")
+    final snapshot = await FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'atti',
+  ).collection("emergency_calls")
         .get();
     if (snapshot.docs.isEmpty) return null;
     EmergencyAlert? latestAlert;
@@ -27,7 +30,7 @@ class EmergencyAlertNotifier extends AsyncNotifier<EmergencyAlert?> {
     for (var doc in snapshot.docs) {
       final data = doc.data();
       if (data["guardian_id"] == guardianId && data["status"] == "ACTIVE") {
-        final createdAt = data["created_at"] as Timestamp?;
+        final createdAt = data["alert_start_date"] as Timestamp?;
         if (createdAt == null) continue;
         if (latestTime == null || createdAt.compareTo(latestTime!) > 0) {
           latestTime = createdAt;
@@ -38,8 +41,10 @@ class EmergencyAlertNotifier extends AsyncNotifier<EmergencyAlert?> {
     return latestAlert;
   }
   Future<void> endEmergency(String alertId) async {
-    await FirebaseFirestore.instance
-        .collection("emergency_alerts")
+    await FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'atti',
+  ).collection("emergency_calls")
         .doc(alertId)
         .update({
       "status": "DONE",

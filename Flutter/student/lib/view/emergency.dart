@@ -1,8 +1,11 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:student/util/acolor.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:student/vm/dusik/student%20_%20provider.dart';
 
 /* 
 Description : 학생 긴급 호출 화면
@@ -16,14 +19,16 @@ Date : 2026-01-17
 Author : 지현
 */
 
-class Emergency extends StatefulWidget {
+class Emergency extends ConsumerStatefulWidget {
   const Emergency({super.key});
 
   @override
-  State<Emergency> createState() => _EmergencyState();
+  ConsumerState<Emergency> createState() => _EmergencyState();
 }
 
-class _EmergencyState extends State<Emergency> {
+class _EmergencyState extends ConsumerState<Emergency> {
+
+
   late String emergencyText; // 버튼 하단 텍스트
   late String buttonImage;   // 버튼 이미지
   late Color appBarColor;    // 앱바 컬러
@@ -42,6 +47,8 @@ class _EmergencyState extends State<Emergency> {
 
   @override
   Widget build(BuildContext context) {
+    final gid = ref.watch(guardianIdProvider(box.read('student_id')));
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: appBarColor,
@@ -62,7 +69,11 @@ class _EmergencyState extends State<Emergency> {
               const SizedBox(height: 20),
               GestureDetector(
                 onLongPress: () async {
-                  await buttonChange();
+                  gid.when(
+                    data: (data) => buttonChange(data),
+                    error: (error, stackTrace) => Center(child: Text('Error:$error'),),
+                    loading: () => Center(child: CircularProgressIndicator(),),
+                  );
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -89,7 +100,7 @@ class _EmergencyState extends State<Emergency> {
             ],
           ),
         ),
-      ),
+      )
     );
   } // build 끝
 
@@ -111,7 +122,7 @@ class _EmergencyState extends State<Emergency> {
   }
   */
 
-  Future<void> buttonChange() async {
+  Future<void> buttonChange(int gid) async {
     // 이미 호출된 상태면 다시 실행 안 함
     if (emergencyText != "위급한 상황에 꾸욱- 눌러주세요") return;
     LocationPermission permission = await Geolocator.checkPermission();
@@ -126,7 +137,7 @@ class _EmergencyState extends State<Emergency> {
       desiredAccuracy: LocationAccuracy.high,
     );
     final studentId = box.read('student_id');
-    final guardianId = box.read('guardian_id');
+    final guardianId = gid;
     if (studentId == null || guardianId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("로그인 정보가 없습니다")),
@@ -134,15 +145,18 @@ class _EmergencyState extends State<Emergency> {
       return;
     }
 
-    await FirebaseFirestore.instance
-        .collection("emergency_alerts")
+    await FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'atti',
+  ).collection("emergency_calls")
         .add({
       "student_id": studentId,              // 학생 ID
       "guardian_id": guardianId,             // 보호자 ID
+      "teacher_id": 1,
       "alert_lat": position.latitude,        // 위도
       "alert_lng": position.longitude,       // 경도
       "status": "ACTIVE",                    // 
-      "created_at": FieldValue.serverTimestamp(),
+      "alert_start_date": FieldValue.serverTimestamp(),
     });
     setState(() {
       emergencyText = "현재 위치가 전달 되었습니다";

@@ -161,6 +161,27 @@ async def login_teacher(teacher: TeacherLogin):
 #         return {'result' : 'Error'}
 #         # >>>>> guardian 테이블 , 보호자 로그인 확인용
 
+@router.get("/select_guardian/{student_id}")
+async def select(student_id: int):
+    # Connection으로 부터 Cursor 생성
+    conn = connect()
+    curs = conn.cursor()
+
+    # SQL 문장
+    sql = """
+            SELECT g.guardian_id
+            FROM guardian g
+            INNER JOIN student s ON g.guardian_phone = s.student_guardian_phone
+            WHERE s.student_id = %s
+        """
+    curs.execute(sql, (student_id,))
+    result = curs.fetchone()
+    conn.close()
+    print(result)
+    # 결과값을 Dictionary로 변환
+    return result
+    # >>>>> student 테이블 , 전체 학생 조회_ 학생 관리용
+
 @router.post("/guardian_login")
 async def login_guardian(guardian: GuardianLogin):
     conn = connect()

@@ -4,8 +4,21 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:student/model/guardian.dart';
 import 'package:student/model/student.dart';
 
+  final guardianIdProvider = FutureProvider.family<int, String>((ref, guardianId) async {
+    final String baseUrl = "http://10.0.2.2:8000/dusik";
+    final int gid;
+    final res = await http.get(Uri.parse("$baseUrl/select_guardian/$guardianId"));
+    if (res.statusCode != 200) {
+      throw Exception('불러오기 실패: ${res.statusCode}\n${utf8.decode(res.bodyBytes)}');
+    }
+    final data = json.decode(utf8.decode(res.bodyBytes));
+    gid = data[0];
+    return gid;
+  });
+  
 class StudentNotifier extends AsyncNotifier<List<Student>>{
   final String baseUrl = "http://10.0.2.2:8000/dusik";
 
@@ -18,6 +31,7 @@ class StudentNotifier extends AsyncNotifier<List<Student>>{
   bool isLoading = false;
   String? error;
   final box = GetStorage(); // GetStorage 인스턴스 생성
+
 
   Future<List<Student>> fetchStudents() async{ 
   //   isLoading = true;

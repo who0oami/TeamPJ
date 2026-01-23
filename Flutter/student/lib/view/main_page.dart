@@ -87,7 +87,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     final studentAsync = ref.watch(studentFutureProvider(studentId));
     final attendAsync = ref.watch(attendProvider);
     final timetableAsync = ref.watch(timetableListProvider);
-    final lunchmenuAsync = ref.watch(lunchmenuListProvider);
+    // final lunchmenuAsync = ref.watch(lunchmenuListProvider);
 
     String formattedDate = DateFormat(
       'yyyy.MM.dd EEEE',
@@ -120,7 +120,7 @@ class _MainPageState extends ConsumerState<MainPage> {
             _buildSectionTitle("시간표"),
             _buildTimetableSection(timetableAsync),
             _buildSectionTitle("오늘 급식"),
-            _buildMealSection(lunchmenuAsync),
+            // _buildMealSection(lunchmenuAsync),
             const SizedBox(height: 100),
             AttendancePopupGate(attendAsync: attendAsync),
           ],
@@ -191,7 +191,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                     ref.invalidate(studentFutureProvider);
                     ref.invalidate(attendProvider);
                     ref.invalidate(timetableListProvider);
-                    ref.invalidate(lunchmenuListProvider);
+                    // ref.invalidate(lunchmenuListProvider);
                     ref.invalidate(scheduleMapProvider);
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(

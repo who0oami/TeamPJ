@@ -16,52 +16,17 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:guardian/vm/minjae/guardian_riverpod.dart';
+import 'package:guardian/vm/sanghyun/chat_vm.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:guardian/util/acolor.dart';
+import 'package:guardian/util/message.dart';
 
 const int kDefaultGuardianId = 2;
 const int kDefaultStudentId = 2;
 
 final Color _kGuardianMuted =
     Acolor.appBarBackgroundColor.withOpacity(0.55);
-
-final guardianChatCollectionProvider = Provider<CollectionReference<Map<String, dynamic>>>(
-  (ref) => FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'atti',
-  ).collection('chatting'),
-);
-
-final guardianChatStreamProvider =
-    StreamProvider.autoDispose.family<List<Map<String, dynamic>>, int>((ref, guardianId) {
-  final col = ref.watch(guardianChatCollectionProvider);
-  return col
-      .where('guardian_id', isEqualTo: guardianId)
-      .orderBy('chatting_date', descending: false)
-      .snapshots()
-      .map((snap) => snap.docs.map((doc) {
-            final d = doc.data() as Map<String, dynamic>;
-            DateTime date;
-            if (d['chatting_date'] is Timestamp) {
-              date = (d['chatting_date'] as Timestamp).toDate();
-            } else if (d['chatting_date'] is String) {
-              date = DateTime.tryParse(d['chatting_date']) ?? DateTime.now();
-            } else {
-              date = DateTime.now();
-            }
-
-            final String contents =
-                (d['chatting_contents'] ?? d['chatting_content'] ?? '').toString();
-            final String imageUrl = (d['chatting_image'] ?? '').toString();
-            return {
-              'contents': contents,
-              'imageUrl': imageUrl,
-              'isMe': d['teacher_id'] == null,
-              'date': date,
-            };
-          }).toList());
-});
 
 class GuardianChatting extends ConsumerStatefulWidget {
   const GuardianChatting({
@@ -332,6 +297,8 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
                         itemBuilder: (ctx, idx) {
                           final m = reversedMsgs[idx];
                           return _buildBubble(
+                            context,
+                            m['docId'],
                             m['contents'],
                             m['imageUrl'],
                             m['date'],
@@ -480,6 +447,8 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
 
   // 채팅 버블 UI.
   Widget _buildBubble(
+    BuildContext context,
+    String? docId,
     String contents,
     String? imageUrl,
     DateTime date,
@@ -487,74 +456,93 @@ class _GuardianChattingState extends ConsumerState<GuardianChatting> {
   ) {
     final String? url = (imageUrl ?? '').trim().isEmpty ? null : imageUrl;
     final bool isMine = isMe;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe)
-            Text(
-              DateFormat('a h:mm').format(date),
-              style: TextStyle(fontSize: 10, color: _kGuardianMuted),
-            ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isMine ? Acolor.primaryColor : Acolor.onPrimaryColor,
-              borderRadius: BorderRadius.circular(18),
-              border: isMine
-                  ? null
-                  : Border.all(color: Acolor.secondaryBackgroundColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Acolor.appBarBackgroundColor.withOpacity(0.07),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                if (url != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      url,
-                      width: 180,
-                      height: 180,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) {
-                        return const Icon(Icons.broken_image, size: 40);
-                      },
-                    ),
-                  ),
-                if (contents.trim().isNotEmpty) ...[
-                  if (url != null) const SizedBox(height: 8),
-                  Text(
-                    contents,
-                    style: TextStyle(
-                      color: isMine
-                          ? Acolor.onPrimaryColor
-                          : Acolor.appBarBackgroundColor,
-                      fontSize: 16,
-                    ),
+    return GestureDetector(
+      onLongPress: (!isMine || docId == null)
+          ? null
+          : () async {
+              final result = await Message.confirm(
+                context,
+                '메세지 삭제',
+                '메세지를 삭제 하시겠습니까?',
+                Acolor.onPrimaryColor,
+              );
+              if (result == true) {
+                await ref
+                    .read(guardianChatCollectionProvider)
+                    .doc(docId)
+                    .delete();
+              }
+            },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment:
+              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe)
+              Text(
+                DateFormat('a h:mm').format(date),
+                style: TextStyle(fontSize: 10, color: _kGuardianMuted),
+              ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isMine ? Acolor.primaryColor : Acolor.onPrimaryColor,
+                borderRadius: BorderRadius.circular(18),
+                border: isMine
+                    ? null
+                    : Border.all(color: Acolor.secondaryBackgroundColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Acolor.appBarBackgroundColor.withOpacity(0.07),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
                   ),
                 ],
-              ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  if (url != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        url,
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) {
+                          return const Icon(Icons.broken_image, size: 40);
+                        },
+                      ),
+                    ),
+                  if (contents.trim().isNotEmpty) ...[
+                    if (url != null) const SizedBox(height: 8),
+                    Text(
+                      contents,
+                      style: TextStyle(
+                        color: isMine
+                            ? Acolor.onPrimaryColor
+                            : Acolor.appBarBackgroundColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          if (isMe)
-            Text(
-              DateFormat('a h:mm').format(date),
-              style: TextStyle(fontSize: 10, color: _kGuardianMuted),
-            ),
-        ],
+            const SizedBox(width: 8),
+            if (isMe)
+              Text(
+                DateFormat('a h:mm').format(date),
+                style: TextStyle(fontSize: 10, color: _kGuardianMuted),
+              ),
+          ],
+        ),
       ),
     );
   }

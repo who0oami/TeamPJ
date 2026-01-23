@@ -24,6 +24,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:teacher/app_keys.dart';
 import 'package:teacher/vm/sanghyun/chatting_provider.dart';
 import 'package:teacher/util/acolor.dart';
+import 'package:teacher/util/message.dart';
 
 // --- [Providers] ---
 
@@ -119,6 +120,7 @@ final chatStreamProvider = StreamProvider.autoDispose((ref) {
                 (d['chatting_contents'] ?? d['chatting_content'] ?? '').toString();
             final String imageUrl = (d['chatting_image'] ?? '').toString();
             return {
+              'docId': doc.id,
               'contents': contents,
               'imageUrl': imageUrl,
               'isTeacher': d['teacher_id'] != null,
@@ -397,7 +399,6 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
 
   // 전역 스낵바 표시.
   void _showSnack(String message) {
-    // [Codex] Use global messenger to avoid missing context issues.
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       messenger.showSnackBar(
@@ -495,7 +496,6 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
     final String safeImageUrl = (imageUrl ?? '').trim();
     for (int attempt = 1; attempt <= _maxSendAttempts; attempt++) {
       try {
-        // [Codex] Quick connectivity check before write.
         await col.limit(1).get(const GetOptions(source: Source.server)).timeout(
           const Duration(seconds: 5),
           onTimeout: () {
@@ -504,7 +504,6 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
           },
         );
         debugPrint("✅ Firebase 읽기 성공");
-        // 2. Firebase 'atti' 인스턴스에 직접 저장
         final value = await col.add({
           'category_id': inquiry['category_id'] ?? 1,
           'chatting_contents': safeText,
@@ -639,6 +638,8 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
                   itemBuilder: (ctx, idx) {
                     final m = reversedMsgs[idx];
                     return _buildBubble(
+                      context,
+                      m['docId'],
                       m['contents'],
                       m['imageUrl'],
                       m['date'],
@@ -665,6 +666,8 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
 
   // 채팅 버블 UI.
   Widget _buildBubble(
+    BuildContext context,
+    String? docId,
     String contents,
     String? imageUrl,
     DateTime date,
@@ -676,66 +679,82 @@ class _ChatDetailViewState extends ConsumerState<_ChatDetailView> {
       color: Acolor.appBarBackgroundColor,
       fontSize: 16,
     );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe)
-            Text(
-              DateFormat('a h:mm').format(date),
-              style: TextStyle(fontSize: 10, color: _kTeacherMuted),
-            ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isMine ? Acolor.primaryColor : Acolor.onPrimaryColor,
-              borderRadius: BorderRadius.circular(18),
-              border: isMine
-                  ? null
-                  : Border.all(color: Acolor.secondaryBackgroundColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Acolor.appBarBackgroundColor.withOpacity(0.07),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                if (url != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      url,
-                      width: 180,
-                      height: 180,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) {
-                        return const Icon(Icons.broken_image, size: 40);
-                      },
-                    ),
+    return GestureDetector(
+      onLongPress: (!isMine || docId == null)
+          ? null
+          : () async {
+              final result = await Message.confirm(
+                context,
+                '메세지 삭제',
+                '메세지를 삭제 하시겠습니까?',
+                Acolor.onPrimaryColor,
+              );
+              if (result == true) {
+                await ref.read(chattingCollectionProvider).doc(docId).delete();
+              }
+            },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment:
+              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe)
+              Text(
+                DateFormat('a h:mm').format(date),
+                style: TextStyle(fontSize: 10, color: _kTeacherMuted),
+              ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isMine ? Acolor.primaryColor : Acolor.onPrimaryColor,
+                borderRadius: BorderRadius.circular(18),
+                border: isMine
+                    ? null
+                    : Border.all(color: Acolor.secondaryBackgroundColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Acolor.appBarBackgroundColor.withOpacity(0.07),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
                   ),
-                if (contents.trim().isNotEmpty) ...[
-                  if (url != null) const SizedBox(height: 8),
-                  Text(contents, style: messageStyle),
                 ],
-              ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  if (url != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        url,
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) {
+                          return const Icon(Icons.broken_image, size: 40);
+                        },
+                      ),
+                    ),
+                  if (contents.trim().isNotEmpty) ...[
+                    if (url != null) const SizedBox(height: 8),
+                    Text(contents, style: messageStyle),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          if (isMe)
-            Text(
-              DateFormat('a h:mm').format(date),
-              style: TextStyle(fontSize: 10, color: _kTeacherMuted),
-            ),
-        ],
+            const SizedBox(width: 8),
+            if (isMe)
+              Text(
+                DateFormat('a h:mm').format(date),
+                style: TextStyle(fontSize: 10, color: _kTeacherMuted),
+              ),
+          ],
+        ),
       ),
     );
   }

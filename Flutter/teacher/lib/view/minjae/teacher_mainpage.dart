@@ -269,7 +269,7 @@ class _TeacherMainPageState extends ConsumerState<TeacherMainPage> {
           leading: Icon(Icons.edit_calendar),
           title: Text("학생 출결 수정"),
         ),
-        const Divider(),
+        Divider(),
         ListTile(
           leading: const Icon(Icons.campaign),
           title: const Text("공지 작성/수정"),
@@ -281,7 +281,7 @@ class _TeacherMainPageState extends ConsumerState<TeacherMainPage> {
             );
           },
         ),
-        const Divider(),
+        Divider(),
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.red),
           title: const Text("로그아웃", style: TextStyle(color: Colors.red)),
@@ -448,6 +448,69 @@ class _TeacherMainPageState extends ConsumerState<TeacherMainPage> {
           return scheduleMap[key] ?? [];
         },
       ),
+    );
+  }
+
+  // ================= Schedule List =================
+  Widget _buildScheduleList(WidgetRef ref) {
+    final schedules = ref.watch(scheduleMapProvider);
+    final selectedDate = ref.watch(selectedDayProvider);
+
+    final key = DateTime(
+      selectedDate!.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+
+    final todaySchedules = schedules[key] ?? [];
+
+    if (todaySchedules.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Text(
+          "오늘은 등록된 일정이 없습니다",
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Column(
+      children: todaySchedules.map((Schedule s) {
+        final timeStr = DateFormat('HH:mm').format(s.schedule_startdate);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.event, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.schedule_title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text("$timeStr · ${s.schedule_contents}",
+                        style: const TextStyle(color: Colors.black54)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 

@@ -52,6 +52,13 @@ class TeacherNotifier extends AsyncNotifier<List<Teacher>> {
 
   Future<List<Teacher>> fetchTeacher(String teacherId) async {
     try {
+      final teacherId = box.read('teacher_id');
+
+      if (teacherId == null) {
+        print('⚠️ 저장된 teacher_id 없음');
+        return [];
+      }
+
       final res = await http.get(
         Uri.parse("$baseUrl/minjae/select/teacher?teacher_id=$teacherId"),
       );

@@ -5,7 +5,11 @@ import 'package:flutter/material.dart';
   Date : 2026-01-15
   Author : 유지현
 */
-
+/*
+  Desciption : 컨펌 다이아로그 생성
+  Date : 2026-01-23
+  Author : 이상현
+*/
 
 class Message {
   // Snack Bar
@@ -44,4 +48,34 @@ class Message {
     );
 } // Dialog
 
-}
+  // Confirm dialog
+  static Future<bool?> confirm(
+    BuildContext context,
+    String title,
+    String content,
+    Color color,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          backgroundColor: color,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('아니요'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('예'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+} 

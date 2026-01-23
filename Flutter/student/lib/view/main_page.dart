@@ -33,10 +33,13 @@ import 'package:intl/intl.dart';
 import 'package:student/view/restitutor/attend_student.dart';
 import 'package:student/view/restitutor/weather/weather.dart';
 import 'package:student/vm/restitutor/attendance_provider.dart';
+import 'package:student/vm/sanghyun/meal_provider.dart';
 import 'package:student/vm/sanghyun/student_provider.dart';
 import 'package:student/view/login.dart';
+import 'package:student/vm/sanghyun/lunch_by_date_provider.dart';
+import 'package:student/view/minjae/attendance_detail.dart';
+import 'package:student/view/notice/notice_tabbar.dart';
 // [Codex] Use student Firebase providers for timetable/lunch/schedule data.
-import 'package:student/vm/sion/lunch_provider.dart';
 import 'package:student/vm/sion/schedule_provider.dart';
 import 'package:student/vm/sion/timetable_provider.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -87,7 +90,8 @@ class _MainPageState extends ConsumerState<MainPage> {
     final studentAsync = ref.watch(studentFutureProvider(studentId));
     final attendAsync = ref.watch(attendProvider);
     final timetableAsync = ref.watch(timetableListProvider);
-    final lunchmenuAsync = ref.watch(lunchmenuListProvider);
+    final lunchmenuAsync =
+        ref.watch(lunchMenusByDateProvider(selectedDay ?? DateTime.now()));
 
     String formattedDate = DateFormat(
       'yyyy.MM.dd EEEE',
@@ -112,14 +116,30 @@ class _MainPageState extends ConsumerState<MainPage> {
         scrollDirection: Axis.vertical,
         child: Column(
           children: [
-            _buildDateHeader(formattedDate, headerMessage),
-            AnimatedColorButton(),
+            AnimatedColorButton(
+              height: 90,
+              childWidget: Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 68),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: _buildDateHeader(formattedDate, headerMessage),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             _buildProfileCard(studentAsync),
+            const SizedBox(height: 6),
             _buildSectionTitle("오늘 일정"),
             _buildCalendar(ref, selectedDay, focusedDay),
+            const SizedBox(height: 8),
             _buildSectionTitle("시간표"),
             _buildTimetableSection(timetableAsync),
-            _buildSectionTitle("오늘 급식"),
+            const SizedBox(height: 8),
+            _buildSectionTitle(
+              '${DateFormat('M월 d일', 'ko_KR').format(selectedDay ?? DateTime.now())} 식단',
+            ),
             _buildMealSection(lunchmenuAsync),
             const SizedBox(height: 100),
             AttendancePopupGate(attendAsync: attendAsync),
@@ -174,8 +194,29 @@ class _MainPageState extends ConsumerState<MainPage> {
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.account_circle),
-                  title: const Text('학생 정보'),
-                  onTap: () {},
+                  title: const Text('출결 내역'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AttendanceDetailPage(),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.view_agenda),
+                  title: const Text('통합 보기'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NoticeTabbar(),
+                      ),
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.settings),
@@ -210,31 +251,21 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
-  // 날짜/오늘 일정 헤더 UI.
+  // 날짜/오늘 일정 텍스트 UI.
   Widget _buildDateHeader(String date, String message) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Acolor.onPrimaryColor,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.wb_sunny, color: Acolor.primaryColor, size: 40),
-          const SizedBox(width: 30),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(date, style: const TextStyle(color: Colors.grey)),
-              Text(
-                message,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(date, style: const TextStyle(color: Colors.grey)),
+        Text(
+          message,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

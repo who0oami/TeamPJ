@@ -320,7 +320,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
-                    // 출석체크
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => AttendStudent()));
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Acolor.successBackColor,
